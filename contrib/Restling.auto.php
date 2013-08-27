@@ -7,6 +7,6 @@
      * initialization of your root script.
      */
     spl_autoload_register(function ($class) {
-        include_once 'include/RestingTLA/classes/' . $class . '.class.php';
+        include_once 'include/RESTling/classes/' . $class . '.class.php';
     });
 ?>
