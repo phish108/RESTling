@@ -6,7 +6,7 @@
  * This class clusters some generic functions that are common for all services that manage
  * access only information.
  */
-class OAuthService extends RESTbase
+class OAuthService extends RESTling
 {
     /**
      * @property $dbh: The global database handler (protected)
