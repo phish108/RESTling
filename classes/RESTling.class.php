@@ -145,11 +145,7 @@ class RESTling extends Logger
         }
     }
 
-    protected function handle_OPTIONS() {
-        // for cors handling
-        $this->respond_text_message("OK");
-    } 
-    
+  
     /**
      * Cache handling
      *
