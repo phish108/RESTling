@@ -524,7 +524,7 @@ class RESTling extends Logger
         // force IE to obey!
         header('X-UA-Compatible: IE=edge');
 
-        if ($this->allowCORS)
+        if ($this->withCORS)
         {
             $origin = '';
             $methods = '';
@@ -852,7 +852,7 @@ class RESTling extends Logger
      */
     protected function not_allowed($message="")
     {
-        $this->log("not allowed");
+        $this->log("not allowed in RESTling");
         // newer PHP version would use
         // http_response_code(405);
         // our old server requires
