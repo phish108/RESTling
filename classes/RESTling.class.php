@@ -292,6 +292,7 @@ class RESTling extends Logger
         if ($this->status != RESTling::OK &&
             $this->status <= RESTling::BAD_METHOD)
         {
+        	$this->log("not allowed in run RESTling");
             $this->not_allowed();
         }
 
