@@ -285,6 +285,7 @@ class RESTling extends Logger
             }
             else
             {
+            	$this->log("method does not exist and status gets a bad method");
                 $this->status = RESTling::BAD_METHOD;
             }
         }
