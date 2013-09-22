@@ -265,6 +265,9 @@ class RESTling extends Logger
         // split the process into phases
         $this->status = RESTling::OK;
 
+        if ($this->status != RESTling::OK){
+        	$this->log("RESTling status is NOT OK");
+        }
 
         $this->initializeRun();
 
@@ -298,9 +301,7 @@ class RESTling extends Logger
             }
         }
 
-        if ($this->status != RESTling::OK){
-        	$this->log("RESTling status is NOT OK");
-        }
+        
         		
         if ($this->status != RESTling::OK &&
             $this->status <= RESTling::BAD_METHOD)
