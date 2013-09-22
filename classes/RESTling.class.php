@@ -256,14 +256,21 @@ class RESTling extends Logger
      * 405 error.
      */
     public function run()
+    
+    
     {
+    	
+    	$this->log("enter run in RESTling");
+    	
         // split the process into phases
         $this->status = RESTling::OK;
 
         $this->initializeRun();
 
         if ( $this->status == RESTling::OK)
+        	
         {
+        	$this->log("before validateURI in RESTling");
             $this->validateURI();
         }
 
@@ -315,7 +322,9 @@ class RESTling extends Logger
      * If the service cannot be initialized, all other steps will be avoided.
      */
     protected function initializeRun()
-    {}
+    {
+    	
+    }
 
     /**
      * @method void validateURI()
@@ -329,7 +338,8 @@ class RESTling extends Logger
      * status property to RESTService::BAD_URI in order to avoid further processing.
      */
     protected function validateURI()
-    {
+    {	
+    	$this->log('enter validateURI');
         $uri = $_SERVER['REQUEST_URI'];
         // decides whether or not to run the service
         if (!empty($this->uri) &&
