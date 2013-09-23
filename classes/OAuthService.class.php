@@ -47,10 +47,12 @@ class OAuthService extends RESTling
         if ($this->status === RESTling::OK &&
             $this->dbh)
         {
+        	$this->log("status and db are ok in OAuthService and initialize session");
             $this->session = new SessionManagement($this->dbh);
         }
         else
         {
+        	$this->log("status to be set as uninitialized");
             $this->status = RESTling::UNINITIALIZED;
         }
     }

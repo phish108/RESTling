@@ -330,6 +330,7 @@ class RESTling extends Logger
     protected function initializeRun()
     {
     	
+    	$this->log("enter intializeRun in RESTling");
     }
 
     /**
