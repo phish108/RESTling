@@ -102,6 +102,8 @@ class RESTling extends Logger
      * By default CORS is activated. In order to completely deactivate CORS, a service
      * can invoke the forbidCORS() method. Subsequent addCORSHost() calls will not
      * overwrite this flag.
+     *
+     * CORS operations should be initialized during the intializeRun phase.
      */
     public function allowCORS()
     {
@@ -147,8 +149,7 @@ class RESTling extends Logger
             }
         }
     }
-
-  
+    
     /**
      * Cache handling
      *
@@ -181,7 +182,7 @@ class RESTling extends Logger
      *
      * The run process has 5 phases
      *
-     *     0. internal run initialization
+     *     0. internal run initialization (including loading of external configuration files
      *     1. URI validation
      *     2. Method validation
      *     3. Header validation
@@ -959,7 +960,5 @@ class RESTling extends Logger
         }
     }
 }
-
-
 
 ?>
