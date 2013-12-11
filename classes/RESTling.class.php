@@ -60,6 +60,9 @@ class RESTling extends Logger
 
     protected $action;
 
+    protected config;
+    protected config_file = 'config.ini';
+    
     public function __construct()
     {
         $this->mark( "********** NEW SERVICE REQUEST ***********");
@@ -256,25 +259,21 @@ class RESTling extends Logger
      * 405 error.
      */
     public function run()
-    
-    
     {
-    	
     	$this->log("enter run in RESTling");
     	
         // split the process into phases
         $this->status = RESTling::OK;
 
-        if ($this->status != RESTling::OK){
-        	$this->log("RESTling status is NOT OK");
-        }
-
-        $this->initializeRun();
-
-        if ( $this->status == RESTling::OK)
-        	
+        $this->loadConfiguration();
+        
+        if ( $this->status == RESTling::OK)	
         {
-        	$this->log("before validateURI in RESTling");
+            $this->initializeRun();
+        }
+        
+        if ( $this->status == RESTling::OK)	
+        {
             $this->validateURI();
         }
 
@@ -282,6 +281,8 @@ class RESTling extends Logger
         {
             $this->validateMethod();
         }
+        
+        // after this point the business logic needs to define error messages
 
         if ($this->status == RESTling::OK)
         {
@@ -300,8 +301,6 @@ class RESTling extends Logger
                 $this->status = RESTling::BAD_METHOD;
             }
         }
-
-        
         		
         if ($this->status != RESTling::OK &&
             $this->status <= RESTling::BAD_METHOD)
@@ -316,11 +315,40 @@ class RESTling extends Logger
         $this->responseData();
     }
 
+    /**
+     * @method void loadConfiguration()
+     * 
+     * This function loads the service configuration from the file that is defined under
+     * $this->config_file. The function checks for the existance of the file and tries to 
+     * load it using parse_ini_file(). 
+     *
+     * This function expects your configuration file to be in the php .ini format.
+     */
+    protected function loadConfiguration() {
+        // TODO: config_file may contain an array with alternative paths
+        // the function should check if the either one of the alternative paths exists.
+        // if one of them exists it should try to read them 
+        // if none exists it should just move on
+        
+        if (!empty($this->config_file) && file_exists($this->config_file)) {
+            $cfg = parse_ini_file($this->config_file, true); // try catch?
+            if (empty($cfg)) {
+                $this->status = RESTling::UNINITIALIZED;
+            }
+            else {
+                $this->log("configuration successfully loaded");
+                $this->config = $cfg;                
+            }
+        }
+    }
+    
+    
      /**
      * @method void initializeRun()
      *
      * This function is used to prepare all internal setup that is required BEFORE the
-     * request is actually handled.
+     * request is actually handled. This may include setting up a database handler and other 
+     * parameters of the process
      *
      * If the internal initialization fails, this function must set the service status to
      * RESTService::UNINITIALIZED.
@@ -329,7 +357,6 @@ class RESTling extends Logger
      */
     protected function initializeRun()
     {
-    	
     	$this->log("enter intializeRun in RESTling");
     }
 
