@@ -24,22 +24,9 @@ class OAuthService extends RESTling
      */
 
     /**
-     * @method __construct($dbh)
-     *
-     * @param $dbh: An active database handler
-     *
-     * Initializes the OAuth session management of the service.
-     */
-    public function __construct($dbh)
-    {
-        parent::__construct();
-        $this->dbh = $dbh;
-    }
-
-    /**
      * initializeRun()
      *
-     * set up the session management
+     * set up the session management. The calling class needs to initialize a database handler before calling this method.
      */
     protected function initializeRun()
     {
@@ -52,7 +39,7 @@ class OAuthService extends RESTling
         }
         else
         {
-        	$this->log("status to be set as uninitialized");
+        	$this->log("status to be set as uninitialized. No database handler is present!");
             $this->status = RESTling::UNINITIALIZED;
         }
     }
