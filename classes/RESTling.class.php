@@ -387,12 +387,7 @@ class RESTling extends Logger
         $this->method = $meth;
         $cmeth = "handle_" . $meth;
 
-        if ( $this->checkMethod($cmeth) ) {
-            $this->action = $methodName;
-        }
-        else {
-            $this->status = RESTling::BAD_METHOD;
-        }
+        $this->checkMethod($cmeth);
     }
     
     
@@ -412,9 +407,12 @@ class RESTling extends Logger
     {
         if (method_exists($this, $methodName))
         {
-          return true;  
+            $this->action = $methodName;
         }
-        return false;
+        else
+        {
+            $this->status = RESTling::BAD_METHOD;
+        }
     }
 
     /**
