@@ -26,12 +26,18 @@
  */
 class RESTling extends Logger
 {
-    const OK               = 0;
-    const UNINITIALIZED    = 1;
-    const BAD_URI          = 2;
-    const BAD_METHOD       = 3;
-    const BAD_HEADER       = 4;
-    const OPERATION_FAILED = 5;
+    const OK                  = 0;
+    const UNINITIALIZED       = 1;
+    
+    // request level errors
+    const BAD_HEADER          = 2;
+    const BAD_URI             = 3;
+    const BAD_METHOD          = 4;
+    
+    // application level errors
+    const BAD_OPERATION       = 5;
+    const OPERATION_FORBIDDEN = 6;
+    const OPERATION_FAILED    = 7;
 
     protected $response_code;
     protected $response_type;
@@ -61,7 +67,7 @@ class RESTling extends Logger
     protected $action;
 
     protected config;
-    protected config_file = 'config.ini';
+    protected config_file = 'config.ini'; // the config file default should be overridden by the actual service constructor
     
     public function __construct()
     {
@@ -272,6 +278,11 @@ class RESTling extends Logger
         {
             $this->initializeRun();
         }
+
+        if ($this->status == RESTling::OK)
+        {
+            $this->validateHeader();
+        }
         
         if ( $this->status == RESTling::OK)	
         {
@@ -282,12 +293,20 @@ class RESTling extends Logger
         {
             $this->validateMethod();
         }
+             
+        if ($this->status == RESTling::OK)
+        {
+            // code level verification of the API method
+            $this->prepareOperation();
+        }
         
         // after this point the business logic needs to define error messages
 
         if ($this->status == RESTling::OK)
         {
-            $this->validateHeader();
+            // the application logic level verification whether an API method should be executed or not
+            // e.g. ACL verification
+            $this->verifyOperation();
         }
 
         if ($this->status == RESTling::OK)
@@ -370,7 +389,7 @@ class RESTling extends Logger
      * time to time).
      *
      * If the URI cannot be validated correctly, this method has to set the
-     * status property to RESTService::BAD_URI in order to avoid further processing.
+     * status property to RESTling::BAD_URI in order to avoid further processing.
      */
     protected function validateURI()
     {	
@@ -402,22 +421,46 @@ class RESTling extends Logger
     /**
      * @method void validateMethod()
      *
-     * Handles the second phase of the run process. This method tests the presence
-     * of an appropriate method handler. If the service class does not implement
+     * Handles the second phase of the run process. This method tests whether the 
+     * requested method is allowed. If the service class does not implement
      * a method handler for the HTTP operation this method sets the status property
      * to RESTService::BAD_METHOD.
-     *
-     * This method must NOT be overridden unless the method handling is altered.
      */
     protected function validateMethod()
     {
         $meth = $_SERVER['REQUEST_METHOD'];
         $this->method = $meth;
         $cmeth = "handle_" . $meth;
-
+    }
+    
+     /**
+      * @method void prepareOperation()
+      *
+      * This method builds the method name or the service handler and test the 
+      * logical presence of this handler. If the service class does not implement
+      * a method handler for the requested operation this method sets the status property
+      * to RESTling::BAD_OPERATION.
+      */
+    protected function prepareOperation() {
+        $cmeth = "handle_" . $this->method;
         $this->checkMethod($cmeth);
     }
     
+    /**
+     * @method void verifyOperation() 
+     *
+     * This method provides the application level verification whether an operation should be
+     * executed or not. This might be the case because a caller might not have sufficient 
+     * privileges for running the operation.
+     * 
+     * If a service requires operation verification as part of the business logic it must
+     * implement this method.
+     * 
+     * If the operation is forbidden in the context of the given request, then this method
+     * must set the status RESTling::OPERATION_FORBIDDEN.
+     */
+    protected function verifyOperation() 
+    {}
     
     /**
      * @method void checkMethod($methodName)
@@ -840,6 +883,24 @@ class RESTling extends Logger
         $this->response_code = 400;
         $this->data = $message;
     }
+    
+    /**
+     * @method not_implemented($message)
+     *
+     * @param misc $message (optional) extra message to be send to the client
+     *
+     * returns the 501 Not Implemented error for all call errors.
+     *
+     * this method is handy for prototyping a service API. 
+     */
+    protected function not_implemented($message="")
+    {
+        $this->log("not implemented");
+        // newer PHP version would use
+        $this->response_code = 501;
+        $this->data = $message;
+    }
+    
     /**
      * @method authentication_required($message)
      *
