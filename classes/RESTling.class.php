@@ -901,6 +901,10 @@ class RESTling extends Logger
         $this->data = $message;
     }
     
+    protected function missing() {
+        this->not_implemented();   
+    }
+    
     /**
      * @method authentication_required($message)
      *
