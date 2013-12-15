@@ -45,7 +45,7 @@ class OAuthSession extends Logger
         $this->dbh = $dbh;
 
         $this->oauth = new OAuthProvider();
-            $this->oauth->setParam('_', NULL);
+        $this->oauth->setParam('_', NULL);
         $this->oauthState = OAUTH_OK;
     }
 
@@ -97,12 +97,12 @@ class OAuthSession extends Logger
 
     public function setUserID($userid)
     {
-           $this->userID = $userid;
+        $this->userID = $userid;
     }
 
     public function getConsumerVerificationMode()
     {
-           return $this->consumerVerificationMode;
+        return $this->consumerVerificationMode;
     }
 
     /**
