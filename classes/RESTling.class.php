@@ -38,7 +38,8 @@ class RESTling extends Logger
     const BAD_OPERATION       = 5;
     const OPERATION_FORBIDDEN = 6;
     const OPERATION_FAILED    = 7;
-
+    const BAD_DATA            = 8;
+    
     protected $response_code;
     protected $response_type;
     
@@ -66,8 +67,8 @@ class RESTling extends Logger
 
     protected $action;
 
-    protected config;
-    protected config_file = 'config.ini'; // the config file default should be overridden by the actual service constructor
+    protected $config;
+    protected $config_file = 'config.ini'; // the config file default should be overridden by the actual service constructor
     
     public function __construct()
     {
@@ -89,7 +90,7 @@ class RESTling extends Logger
     /**
      * CORS management functions
      *
-     * RESTService implements basic CORS functions.
+     * RESTling implements basic CORS functions.
      *
      * @method void allowCORS()
      * @method void forbidCORS()
@@ -186,21 +187,23 @@ class RESTling extends Logger
      *
      * For unsupported HTTP request methods the service responds with a 405 Not Allowed code.
      *
-     * The run process has 5 phases
+     * The run process has 7 phases
      *
-     *     0. internal run initialization (including loading of external configuration files
-     *     1. URI validation
-     *     2. Method validation
-     *     3. Header validation
-     *     4. Method handling
-     *     5. Response generation
+     *     0. internal run initialization (including loading of external configuration files)
+     *     1. Header validation
+     *     2. URI validation
+     *     3. Method validation
+     *     4. Operation preparation
+     *     5. Operation verification
+     *     6. Operation handling
+     *     7. Response generation
      *
-     * Phase 1-4 are sequential based on the success of the previous operation.
-     * Phase 5 is always executed and has 3 sub-steps
+     * Phase 1-6 are sequential based on the success of the previous operation.
+     * Phase 7 is always executed and has 3 sub-steps
      *
-     *     5.1. HTTP Response Code generation
-     *     5.2. HTTP Header generation
-     *     5.3. Response data generation
+     *     7.1. HTTP Response Code generation
+     *     7.2. HTTP Header generation
+     *     7.3. Response data generation
      *
      * The phases allow to organize your code logically as a process. This allows
      * you to focus on the business logic at hand. 
@@ -209,6 +212,9 @@ class RESTling extends Logger
      * to the service request, such as checking the validity of of the data base or testing
      * for initialization errors when a class is not loaded or a global property is not
      * initialized.
+     *
+     * The header validation analyzes the request headers. This phase is typically responsible
+     * for session management.
      * 
      * The URI validation checks if the service is called for an accepted URI. This also takes
      * over the path_info extraction, so you can switch your service into different modes.
@@ -216,11 +222,11 @@ class RESTling extends Logger
      * The method validation phase tests if the method should be accepted for the request
      * URI. This phase decides which handler function should be called. The method validation
      * is typically responsible for detecting protocol level errors. 
+     * 
+     * The operation preparation identifies the method names for running a specific operation. 
+     * 
      *
-     * The header validation analyzes the request headers. This phase is typically responsible
-     * for session management.
-     *
-     * The method handling calls the handler function for the request method that has been
+     * The operation handling calls the handler function for the request method that has been
      * determinated during the method validation phase.
      *
      * Finally the response generation generates the appropriate output for the internal
@@ -293,11 +299,18 @@ class RESTling extends Logger
         {
             $this->validateMethod();
         }
+        
+        if ($this->status === RESTling::OK &&
+            ($this->method === "PUT" || $this->method === "POST") )
+        {
+            $this->loadData();    
+        }
              
         if ($this->status == RESTling::OK)
         {
             // code level verification of the API method
             $this->prepareOperation();
+            $this->checkOperation();
         }
         
         // after this point the business logic needs to define error messages
@@ -308,27 +321,53 @@ class RESTling extends Logger
             // e.g. ACL verification
             $this->verifyOperation();
         }
-
+        
         if ($this->status == RESTling::OK)
         {
             if(method_exists($this, $this->action))
             {
-                call_user_func(array($this, $this->action)) ;
+                call_user_func(array($this, $this->action)); // try catch?
             }
             else
             {
             	$this->log("method does not exist and status gets a bad method");
-                $this->status = RESTling::BAD_METHOD;
+                $this->status = RESTling::BAD_OPERATION;
             }
         }
         		
-        if ($this->status != RESTling::OK &&
-            $this->status <= RESTling::BAD_METHOD)
+        if ($this->status != RESTling::OK && empty($this->response_code))
         {
-        	$this->log("not allowed in run RESTling");
-            $this->not_allowed();
+            $this->log("service failed in stage " . $this->status);  
+            
+            switch($this->status)
+            {
+            case RESTling::UNINITIALIZED:
+                $this->log('setup error!');
+                $this->unavailable();
+                break;
+            case RESTling::BAD_URI:
+                $this->log('malformed URI detected!');
+                $this->not_found();
+                break;
+            case RESTling::BAD_DATA:
+                $this->log('malformed data detected!');
+            case RESTling::BAD_HEADER:
+                $this->log('malformed header detected!');
+            case RESTling::BAD_METHOD:
+                $this->log('wrong request method detected!');
+            case RESTling::BAD_OPERATION:
+                $this->log("not allowed by RESTling");
+                $this->not_allowed();
+                break;
+            case RESTling::OPERATION_FORBIDDEN:
+                $this->log('access forbidden by application logic');
+                $this->forbidden();
+                break;
+            default:
+                break;
+            }   
         }
-
+        
         // generate the response
         $this->responseCode();
         $this->responseHeaders();
@@ -371,7 +410,7 @@ class RESTling extends Logger
      * parameters of the process
      *
      * If the internal initialization fails, this function must set the service status to
-     * RESTService::UNINITIALIZED.
+     * RESTling::UNINITIALIZED.
      *
      * If the service cannot be initialized, all other steps will be avoided.
      */
@@ -394,7 +433,7 @@ class RESTling extends Logger
     protected function validateURI()
     {	
     	$this->log('enter validateURI');
-        $uri = $_SERVER['REQUEST_URI'];
+        $uri = $_SERVER['REQUEST_URI']; 
         // decides whether or not to run the service
         if (!empty($this->uri) &&
             strncmp($uri, $this->uri, strlen($this->uri)) !== 0)
@@ -415,6 +454,9 @@ class RESTling extends Logger
                 $ruri = preg_replace('/\?.*$/', '', $ruri);
                 $this->path_info = $ruri;
             }
+            else if (!empty($_SERVER['PATH_INFO'])) {
+                $this->path_info = $_SERVER['PATH_INFO'];
+            }
         }
     }
 
@@ -424,13 +466,36 @@ class RESTling extends Logger
      * Handles the second phase of the run process. This method tests whether the 
      * requested method is allowed. If the service class does not implement
      * a method handler for the HTTP operation this method sets the status property
-     * to RESTService::BAD_METHOD.
+     * to RESTling::BAD_METHOD.
      */
     protected function validateMethod()
     {
         $meth = $_SERVER['REQUEST_METHOD'];
         $this->method = $meth;
-        $cmeth = "handle_" . $meth;
+    }
+    
+    /**
+     * @method void loadData()
+     *
+     * This method is triggered when the service catches a PUT or POST request in order to 
+     * load structured (non url-encoded) data into the business logic. By default this method 
+     * expects a JSON string as input. If the data fails to parse as JSON this method sets 
+     * the status property to RESTling::BAD_DATA. 
+     *
+     * In case a service expects different data formats of input this method has to be 
+     * overwridden.
+     */
+    protected function loadData() {
+        $content = file_get_contents("php://input");
+        $data = json_decode($content, true);
+        if (!empty($data))
+        {
+            $this->input = $data;
+        }
+        else
+        {
+            $this->status = RESTling::BAD_DATA;
+        }
     }
     
      /**
@@ -442,8 +507,7 @@ class RESTling extends Logger
       * to RESTling::BAD_OPERATION.
       */
     protected function prepareOperation() {
-        $cmeth = "handle_" . $this->method;
-        $this->checkMethod($cmeth);
+        $this->action = "handle_" . $this->method;
     }
     
     /**
@@ -463,24 +527,15 @@ class RESTling extends Logger
     {}
     
     /**
-     * @method void checkMethod($methodName)
-     *
-     * @param String $methodName: the name of a method in this class.
+     * private @method void checkOperation()
      *
      * Convinience function so we can implement mode complex protocol level validation.
      *
      * The function will test for the presence of a certain function in the calling class.
-     *
-     * If the function is present, then it passes the name to the method handling phase,
-     * so it can be called there. 
      */
-    protected function checkMethod($methodName)
+    private function checkOperation()
     {
-        if (method_exists($this, $methodName))
-        {
-            $this->action = $methodName;
-        }
-        else
+        if (empty($this->action) || !method_exists($this, $this->action))
         {
             $this->status = RESTling::BAD_METHOD;
         }
@@ -493,7 +548,7 @@ class RESTling extends Logger
      * for session management or other header related tasks.
      *
      * If the header is not correctly validated for running the requested operation,
-     * this class needs to set the status property to RESTService::BAD_HEADER.
+     * this class needs to set the status property to RESTling::BAD_HEADER.
      *
      * If the header validation is incusscessful this method should also set the
      * response information that is sent to the client.
@@ -623,7 +678,7 @@ class RESTling extends Logger
                 $origin = '*';
                 $methods = join(', ', $this->corsHosts['*']);
             }
-            elseif (array_key_exists($_SERVER['HTTP_REFERRER']))
+            elseif (array_key_exists('HTTP_REFERRER', $_SERVER))
             {
                 $origin = $_SERVER['HTTP_REFERRER'];
                 $methods = join(', ', $this->corsHosts[$_SERVER['HTTP_REFERRER']]);
@@ -669,31 +724,37 @@ class RESTling extends Logger
     {
         if (!empty($this->data))
         {
-            if ( $this->status === RESTService::OK &&
-                ($this->response_code === 200 || empty($this->response_code)) )
+            $this->log('found data to respond');
+            
+            if ( $this->status === RESTling::OK &&
+                ($this->response_code == 200 || empty($this->response_code)) )
             {
+                $this->log('normal output mode');
+                
                 $outputfunction = 'text_message';
-                switch ( $this->response_type )
-                {
-                    case 'JSON':
-                    case 'json':
-                        $outputfunction = 'json_data';
-                        $this->respond_json_data();
-                        break;
-                    case 'FORM':
-                    case 'form':
-                        $outputfunction = 'form_encoded';
-                        break;
-                    case 'TEXT':
-                    case 'text':
-                        break;
-                    default:
-                        $outputfunction = 'respond_'.strtolower($this->response_type);
-                        break;
+                if (!empty($this->response_type)) {
+                    switch ( strtolower($this->response_type) )
+                    {
+                        case 'json':
+                            $outputfunction = 'json_data';
+                            break;
+                        case 'form':
+                            $outputfunction = 'form_encoded';
+                            break;
+                        case 'text':
+                            break;
+                        default:
+                            $outputfunction = strtolower($this->response_type);
+                            break;
+                    }
                 }
-                if ( method_exists($this, $outputfunction) )
+                
+                $this->log('try to respond with ' . $outputfunction);
+                
+                if ( method_exists($this, 'respond_'. $outputfunction) )
                 {
-                    call_user_func(array($this, $outputfunction));
+                    $this->log('respond via ' . $outputfunction);
+                    call_user_func(array($this, 'respond_'. $outputfunction), $this->data);
                 }
             }
             else
@@ -761,7 +822,6 @@ class RESTling extends Logger
     /** **********************************************************************
      * COMMON HTTP RESPONSES
      ********************************************************************** **/
-
 
     /**
      * @method respond_json_data()
@@ -863,7 +923,7 @@ class RESTling extends Logger
           // newer PHP version would use
           // http_response_code(204);
           // our old server requires
-          header("HTTP/1.1 204 No Content");
+          // header("HTTP/1.1 204 No Content");
            $this->response_code = 204;
            $this->data = "";
     }
@@ -902,7 +962,23 @@ class RESTling extends Logger
     }
     
     protected function missing() {
-        this->not_implemented();   
+        $this->not_implemented();   
+    }
+    
+    /**
+     * @method not_implemented($message)
+     *
+     * @param misc $message (optional) extra message to be send to the client
+     * 
+     * Sends the 503 error message to the client. This method is typically triggered in the 
+     * service fails with a RESTling::UNINITIALIZED status.
+     */
+    protected function unavailable($message="")
+    {
+        $this->log("service unavailable");
+        // newer PHP version would use
+        $this->response_code = 503;
+        $this->data = $message;
     }
     
     /**
