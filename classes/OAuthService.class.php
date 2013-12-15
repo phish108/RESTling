@@ -5,6 +5,8 @@
  *
  * This class clusters some generic functions that are common for all services that manage
  * access only information.
+ *
+ * NOTE that PHP oauth functions will extract the request headers automatically.
  */
 class OAuthService extends RESTling
 {
