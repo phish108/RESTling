@@ -19,7 +19,7 @@ use git's submodule function in order to keep up to date with the code.
 License
 -------
  
-PowerTLA is licensed under the GNU Affero License. 
+RESTling is licensed under the GNU Affero License. 
  
 Contributors
 ------------
