@@ -65,7 +65,7 @@ class RESTling extends Logger
     protected $withCaching = false;
     protected $corsHosts;
 
-    protected $action;
+    protected $operation;
 
     protected $config;
     protected $config_file = 'config.ini'; // the config file default should be overridden by the actual service constructor
@@ -272,9 +272,7 @@ class RESTling extends Logger
      * 405 error.
      */
     public function run()
-    {
-    	$this->log("enter run in RESTling");
-    	
+    {	
         // split the process into phases
         $this->status = RESTling::OK;
 
@@ -310,6 +308,12 @@ class RESTling extends Logger
         {
             // code level verification of the API method
             $this->prepareOperation();
+            // make sure that handle_OPTIONS works even with exotic prepareOperation methods
+            if ($this->method == 'OPTIONS')
+            {
+                $this->operation = 'handle_OPTIONS';
+            }
+            
             $this->checkOperation();
         }
         
@@ -324,18 +328,19 @@ class RESTling extends Logger
         
         if ($this->status == RESTling::OK)
         {
-            if(method_exists($this, $this->action))
+            if(method_exists($this, $this->operation))
             {
-                call_user_func(array($this, $this->action)); // try catch?
+                call_user_func(array($this, $this->operation)); // try catch?
             }
             else
             {
-            	$this->log("method does not exist and status gets a bad method");
+            	$this->log("method '" . $this->operation . "' does not exist and status gets a bad method");
                 $this->status = RESTling::BAD_OPERATION;
             }
         }
         		
-        if ($this->status != RESTling::OK && empty($this->response_code))
+        if ($this->status != RESTling::OK 
+            && empty($this->response_code))
         {
             $this->log("service failed in stage " . $this->status);  
             
@@ -351,10 +356,16 @@ class RESTling extends Logger
                 break;
             case RESTling::BAD_DATA:
                 $this->log('malformed data detected!');
+                $this->not_allowed();
+                break;
             case RESTling::BAD_HEADER:
                 $this->log('malformed header detected!');
+                $this->not_allowed();
+                break;
             case RESTling::BAD_METHOD:
                 $this->log('wrong request method detected!');
+                $this->not_allowed();
+                break;
             case RESTling::BAD_OPERATION:
                 $this->log("not allowed by RESTling");
                 $this->not_allowed();
@@ -487,13 +498,16 @@ class RESTling extends Logger
      */
     protected function loadData() {
         $content = file_get_contents("php://input");
+        $this->log('data content is ' . $content);
         $data = json_decode($content, true);
-        if (!empty($data))
+        if (isset($data))
         {
+            $this->log('data loading is ok');
             $this->input = $data;
         }
         else
         {
+            $this->log('bad data');
             $this->status = RESTling::BAD_DATA;
         }
     }
@@ -507,7 +521,7 @@ class RESTling extends Logger
       * to RESTling::BAD_OPERATION.
       */
     protected function prepareOperation() {
-        $this->action = "handle_" . $this->method;
+        $this->operation = "handle_" . $this->method;
     }
     
     /**
@@ -535,7 +549,7 @@ class RESTling extends Logger
      */
     private function checkOperation()
     {
-        if (empty($this->action) || !method_exists($this, $this->action))
+        if (empty($this->operation) || !method_exists($this, $this->operation))
         {
             $this->status = RESTling::BAD_METHOD;
         }
@@ -724,13 +738,9 @@ class RESTling extends Logger
     {
         if (!empty($this->data))
         {
-            $this->log('found data to respond');
-            
-            if ( $this->status === RESTling::OK &&
+            if ( $this->status == RESTling::OK &&
                 ($this->response_code == 200 || empty($this->response_code)) )
-            {
-                $this->log('normal output mode');
-                
+            {   
                 $outputfunction = 'text_message';
                 if (!empty($this->response_type)) {
                     switch ( strtolower($this->response_type) )
@@ -748,13 +758,10 @@ class RESTling extends Logger
                             break;
                     }
                 }
-                
-                $this->log('try to respond with ' . $outputfunction);
-                
+                    
                 if ( method_exists($this, 'respond_'. $outputfunction) )
                 {
-                    $this->log('respond via ' . $outputfunction);
-                    call_user_func(array($this, 'respond_'. $outputfunction), $this->data);
+                    call_user_func(array($this, 'respond_'. $outputfunction));
                 }
             }
             else
@@ -906,10 +913,16 @@ class RESTling extends Logger
      * A simple helper function that generates the content-type header for plain text messages.
      * Very convinient for error messages.
      */
-    protected function respond_text_message($message)
+    protected function respond_text_message()
     {
-        header('content-type: text/plain');
-        echo($message);
+        if (empty($this->data))
+        {
+            $this->no_content();
+        }
+        else 
+        {
+            $this->respond_with_message($this->data);   
+        }
     }
 
     /**
