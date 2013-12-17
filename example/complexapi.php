@@ -16,26 +16,20 @@ class ComplexAPIExample extends RESTling
     
     protected function validateURI() 
     {
-        parent::validateURI(); // this makes the path_info property available.
+        parent::validateURI(); // this makes the path_info and the operands property available.
         
-        // the API is defined via the path_info. 
-        $api = explode('/', $this->path_info);
+        // the API is defined via the path_info operands. 
+        $api = $this->operands;
         
-        // note that one slash splits the string into 2 partitions. The first element is always empty.
-        // if the second element is not empty we can use it. If the string has more partitions, the request.
-        // will get rejected.
-        
-        if (count($api) > 2) 
+        if (count($api) == 1 && !empty($api[0]))
+        {
+            // if there is exactly 1 path_info level, then we use that for determing the 'service mode'.
+            $this->apimode = $api[0];
+        }
+        else 
         {
             // this example allows only one level of the path_info depth.
             $this->status = RESTling::BAD_URI;   
-            return;
-        }
-        
-        if (count($api) == 2 && !empty($api[1]))
-        {
-            // if there is exactly 1 path_info level, then we use that for determing the 'service mode'.
-            $this->apimode = $api[1];
         }
     }
     
