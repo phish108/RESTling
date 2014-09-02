@@ -3,39 +3,42 @@
 /**
  * @class: RESTling
  *
- * This is a basic service class for RESTful services that provides the basic logic for many RESTful Web-services. 
- * RESTling is a simple class for developing structured and extensible web-services in object-oriented PHP.
- * This base class provides a generic precessing pipeline for RESTful services. This processing pipeline focuses
- * on handling one request. The pipeline should simplify the business logic of RESTful web-services 
- * written in PHP and support the debugging process.
+ * This is a basic service class for RESTful services that provides the basic
+ * logic for many RESTful Web-services.
+ * RESTling is a simple class for developing structured and extensible
+ * web-services in object-oriented PHP.
+ * This base class provides a generic precessing pipeline for RESTful services.
+ * This processing pipeline focuses on handling one request. The pipeline should
+ * simplify the business logic of RESTful web-services written in PHP and support
+ * the debugging process.
  *
  * ## Pipeline logic
  *
- * The RESTling pipeline has four basic phases. 
+ * The RESTling pipeline has four basic phases.
  *
  * 1. Initialization Phase
  * 2. Request Verification Phase
  * 3. Request Operation Phase
  * 4. Response Generation Phase
- * 
+ *
  * Each phase is covered by one or more methods of a RESTling class. The idea of RESTling is that is only required
- * to implement the business logic for the phases that affect the service. 
+ * to implement the business logic for the phases that affect the service.
  *
  * ## Running RESTling Services
- * 
+ *
  * Running service instances are designed to be minimalistic. A typical service script is called as following:
  *
  *     $service = new MyServiceClass();
  *     // do some additional initialization if needed
  *     $service->run();
- * 
- * Most of the RESTling magic is happening in the run() method. However, no service classs will have to overload this method. 
- * Instead, all business logic will be implemented in the related phases, which typically boils down to implementing the 
- * Request Operation Phase logic. 
+ *
+ * Most of the RESTling magic is happening in the run() method. However, no service classs will have to overload this method.
+ * Instead, all business logic will be implemented in the related phases, which typically boils down to implementing the
+ * Request Operation Phase logic.
  *
  * ## Implementing a RESTling service.
- * 
- * A RESTling implementation requires a service class that implements the handler functions for the service operations. 
+ *
+ * A RESTling implementation requires a service class that implements the handler functions for the service operations.
  * By default the format for service operations is
  *
  *     protected function handle_HTTPREQUESTMETHOD()
@@ -48,25 +51,17 @@
  *
  *     protected function handle_GET(){}
  *     protected function handle_PUT(){}
- * 
- * However, RESTling provide a flexible approach for implementing complex RESTful APIs.  
  *
- * ## Service configuration
- *
- * RESTling uses PHP init file capabilities for configuring the service. This process is influenced by the properties $config_file and $config_path.
- * RESTling will use the $config_path to look for the specified configuration file. If a configuration file has been found, it will load the configuration
- * into the $config property. The configuration will be available after RESTling's own constructor has been run. Therefore, it is necessary that 
- * the configuration path and the configuration file name either contain default values or are initialized before the service calls parent::__construct().
- *
- * See loadConfiguration() for details.
+ * However, RESTling provide a flexible approach for implementing complex RESTful APIs through the
+ * prepareOperation() method.
  *
  * ## Debugging RESTling
- * 
- * RESTling inherits from the Logger class. Logger provides basic logging functions that should simplify the 
- * debugging process on a server. 
- * 
- * When in debug mode, RESTling generates markers for the start and the end of a request handling. In case of 
- * pipeline errors RESTling also provides an indication at what level the service failed. 
+ *
+ * RESTling inherits from the Logger class. Logger provides basic logging functions that should simplify the
+ * debugging process on a server.
+ *
+ * When in debug mode, RESTling generates markers for the start and the end of a request handling. In case of
+ * pipeline errors RESTling also provides an indication at what level the service failed.
  *
  * ## Cross Origin Resource Sharing (CORS) management functions
  *
@@ -87,33 +82,34 @@
  * can invoke the forbidCORS() method. Subsequent addCORSHost() calls will not
  * overwrite this flag.
  *
- * CORS operations should be initialized during the intializeRun phase.
- * 
- * Note, CORS requests may not include headers on all browsers.  
+ * CORS operations should be initialized during the intializeRun phase or from the
+ * external business logic.
  *
- * Cross Origin Resource Sharing is currently unreliable due to massive browser differences. 
+ * Note, CORS requests may not include headers on all browsers.
+ *
+ * Cross Origin Resource Sharing is currently unreliable due to massive browser differences.
  * Therefore, the present state of RESTling's CORS support is likely to remain rudimentary.
- * 
+ *
  */
 class RESTling extends Logger
 {
     const OK                  = 0;
     const UNINITIALIZED       = 1;
-    
+
     // request level errors
     const BAD_HEADER          = 2;
     const BAD_URI             = 3;
     const BAD_METHOD          = 4;
-    
+
     // application level errors
     const BAD_OPERATION       = 5;
     const OPERATION_FORBIDDEN = 6;
     const OPERATION_FAILED    = 7;
     const BAD_DATA            = 8;
-    
+
     protected $response_code; ///< integer, three digit response code for the client response
     protected $response_type; ///< string, content type alias of the respose. This determines the response function to encode the data stash.
-    
+
     /**
      * @property misc $data: Internal Service Data Stash.
      *
@@ -124,32 +120,30 @@ class RESTling extends Logger
      * This property can hold arbitary data and the response_*() function will choose how to send it to the
      * client.
      */
-    protected $data;          
-    
+    protected $data;
+
     protected $uri;           ///< string, variable to constrain the service to be called only in a predefined context.
     protected $bURIOK = true; ///< boolean, obsolete variable for identifying valid service calls.
     protected $path_info;     ///< string, contains service's path_info.
     protected $operands;      ///< array, contains the path operands for the request.
     protected $status;        ///< integer, contains the service's pipeline status.
-    protected $method;        ///< string, contains the request method. 
+    protected $method;        ///< string, contains the request method.
 
     protected $withCORS    = true;
     protected $withCaching = false;
     protected $corsHosts;     ///< array, list of referer hosts that are allowed to call this service via CORS.
 
-    protected $operation;     ///< string, function name of the operation to be called. 
+    protected $operation;     ///< string, function name of the operation to be called.
 
-    protected $config;        ///< misc, named array that contains the service configuration loaded from the configuration file.
-    protected $config_file = 'config.ini'; ///< string, name of the configuration file.
-    protected $config_path = ['.']; ///< array, search path for the configuration file. The final constructor should override this property.
-    
+    private headerValidators; ///< array, list of validators to be used
+
     public function __construct()
     {
         $this->mark( "********** NEW SERVICE REQUEST ***********");
         $this->corsHosts = array();
-        
+        $this->headerValidators = array();
+
         $this->status = RESTling::OK;
-        $this->loadConfiguration();
     }
 
     /**
@@ -161,7 +155,6 @@ class RESTling extends Logger
     {
         $this->mark( "********** END SERVICE REQUEST ************");
     }
-
 
     /**
      */
@@ -181,8 +174,8 @@ class RESTling extends Logger
      * @param mixed $host: hostname string or array of hostnames
      * @param mixed $methods: method string or array of methods
      *
-     * Adds a host that is an valid referrer for CORS requests. 
-     * If a service never adds a host but activates CORS requests, then RESTling will accept requests from 
+     * Adds a host that is an valid referrer for CORS requests.
+     * If a service never adds a host but activates CORS requests, then RESTling will accept requests from
      * all sources.
      */
     public function addCORSHost($host, $methods)
@@ -219,7 +212,7 @@ class RESTling extends Logger
             }
         }
     }
-    
+
     /**
      * Cache handling
      *
@@ -267,7 +260,7 @@ class RESTling extends Logger
      * 3. Response data generation
      *
      * The phases allow to organize your code logically as a process. This allows
-     * you to focus on the business logic at hand. 
+     * you to focus on the business logic at hand.
      *
      * The internal run initialization is used to setup everything that is independent
      * to the service request, such as checking the validity of of the data base or testing
@@ -276,21 +269,21 @@ class RESTling extends Logger
      *
      * The header validation analyzes the request headers. This phase is typically responsible
      * for session management.
-     * 
+     *
      * The URI validation checks if the service is called for an accepted URI. This also takes
      * over the path_info extraction, so you can switch your service into different modes.
      *
      * The method validation phase tests if the method should be accepted for the request
      * URI. This phase decides which handler function should be called. The method validation
-     * is typically responsible for detecting protocol level errors. 
-     * 
-     * The operation preparation identifies the method names for running a specific operation. 
-     * 
+     * is typically responsible for detecting protocol level errors.
+     *
+     * The operation preparation identifies the method names for running a specific operation.
+     *
      * The operation handling calls the handler function for the request method that has been
      * determinated during the method validation phase.
      *
      * Finally the response generation generates the appropriate output for the internal
-     * service state. 
+     * service state.
      *
      * Under normal circumstances a subclass will only need to implement the
      * method handling. Under normal conditions a subclass adds simply the
@@ -328,10 +321,10 @@ class RESTling extends Logger
      * method has to be overridden.
      */
     public function run()
-    {	
+    {
         // split the process into phases
-        
-        if ( $this->status == RESTling::OK)	
+
+        if ( $this->status == RESTling::OK)
         {
             $this->initializeRun();
         }
@@ -340,8 +333,8 @@ class RESTling extends Logger
         {
             $this->validateHeader();
         }
-        
-        if ( $this->status == RESTling::OK)	
+
+        if ( $this->status == RESTling::OK)
         {
             $this->validateURI();
         }
@@ -350,61 +343,60 @@ class RESTling extends Logger
         {
             $this->validateMethod();
         }
-        
+
         if ($this->status === RESTling::OK &&
             ($this->method === "PUT" || $this->method === "POST") )
         {
-            $this->loadData();    
+            $this->loadData();
         }
-             
+
         if ($this->status == RESTling::OK)
         {
             // code level verification of the API method
+            // this function normally sets $this->operation.
             $this->prepareOperation();
-            
-            // make sure that handle_OPTIONS works even with exotic prepareOperation methods
+
+            // ensure that handle_OPTIONS works even with exotic prepareOperation methods
             if ($this->method == 'OPTIONS')
             {
                 $this->operation = 'handle_OPTIONS';
             }
-            
+
             $this->checkOperation();
         }
-        
+
         // after this point the business logic needs to define error messages
 
         if ($this->status == RESTling::OK)
         {
-            // the application logic level verification whether an API method should be executed or not
-            // e.g. ACL verification
-            $this->verifyOperation();
+            // the application logic level verification whether an API method
+            // should be executed or not, e.g. ACL verification
+
+            $oper = $this->operation; // ensure that the operation cannot be overwriten at this point
+
+            $this->validateOperation();
+
+            $this->operation = $oper;
         }
-        
+
         if ($this->status == RESTling::OK)
         {
-            if(method_exists($this, $this->operation))
-            {
-                call_user_func(array($this, $this->operation)); // try catch?
-            }
-            else
-            {
-            	$this->log("method '" . $this->operation . "' does not exist and status gets a bad method");
-                $this->status = RESTling::BAD_OPERATION;
-            }
+            // now call the operation
+            call_user_func(array($this, $this->operation)); // try catch?
         }
-        		
-        if ($this->status != RESTling::OK 
+
+        if ($this->status != RESTling::OK
             && empty($this->response_code))
         {
             /**
-             * Before entering the response generation phase, RESTling evaluates the pipeline status and 
-             * prepares the responses for pipeline errors. Therefore, the application logic will not have 
-             * to bother about standard error handling, such as bad headers or request URLs. 
-             * 
+             * Before entering the response generation phase, RESTling evaluates the pipeline status and
+             * prepares the responses for pipeline errors. Therefore, the application logic will not have
+             * to bother about standard error handling, such as bad headers or request URLs.
+             *
              * If debugging is enabled, this mechanism will also log any pipeline errors.
              */
-            $this->log("service failed in stage " . $this->status);  
-            
+            $this->log("service failed in stage " . $this->status);
+
             switch($this->status)
             {
             case RESTling::UNINITIALIZED:
@@ -418,14 +410,14 @@ class RESTling extends Logger
             case RESTling::BAD_URI:
                 /**
                  * If the service fails during validateURI() the service will always respond 404 Not Found.
-                 * This indicates that the requested URL is not available on the server. 
+                 * This indicates that the requested URL is not available on the server.
                  */
                 $this->log('malformed URI detected!');
                 $this->not_found();
                 break;
             case RESTling::BAD_DATA:
                 /**
-                 * If the data object sent in PUT or POST requests is malformed, then RESTling will send 
+                 * If the data object sent in PUT or POST requests is malformed, then RESTling will send
                  * a 400 Bad Request error to the client.
                  */
                 $this->log('malformed data detected!');
@@ -433,7 +425,7 @@ class RESTling extends Logger
                 break;
             case RESTling::BAD_HEADER:
                 /**
-                 * If the request headers cannot be validated, then RESTling will send 
+                 * If the request headers cannot be validated, then RESTling will send
                  * a 412 Precondition Failed response to the client.
                  */
                 $this->log('malformed header detected!');
@@ -441,9 +433,9 @@ class RESTling extends Logger
                 break;
             case RESTling::BAD_METHOD:
                 /**
-                 * If the request method cannot be validated, then RESTling will send 
-                 * a 405 Method Not Allowed response to the client. 
-                 * 
+                 * If the request method cannot be validated, then RESTling will send
+                 * a 405 Method Not Allowed response to the client.
+                 *
                  * Note, that RESTling will not extend the headers for this response.
                  */
                 $this->log('wrong request method detected!');
@@ -452,19 +444,19 @@ class RESTling extends Logger
             case RESTling::BAD_OPERATION:
                 /**
                  * If the request tries to access an operation that is not implemented by the service,
-                 * RESTling will automatically generate a 400 Bad Request response. 
+                 * RESTling will automatically generate a 400 Bad Request response.
                  */
                 $this->log("not allowed by RESTling");
                 $this->bad_request();
                 break;
             case RESTling::OPERATION_FORBIDDEN:
                 /**
-                 * If the application logic forbids the access to the requested operation, RESTling will 
-                 * automatically generate a 403 Forbidden response. This behaviour can be changed for example 
-                 * by calling authentication_required() during verifyOperation().
+                 * If the application logic forbids the access to the requested operation, RESTling will
+                 * automatically generate a 403 Forbidden response. This behaviour can be changed for example
+                 * by calling authentication_required() during validateOperation().
                  */
                 $this->log('access forbidden by application logic');
-                if (empty($this->request_code)) 
+                if (empty($this->request_code))
                 {
                     $this->forbidden();
                 }
@@ -474,69 +466,22 @@ class RESTling extends Logger
                 // the operation must set the return code.
                 break;
             default:
-                // case RESTling::OK 
+                // case RESTling::OK
                 break;
-            }   
+            }
         }
-        
+
         // generate the response
         $this->responseCode();
         $this->responseHeaders();
         $this->responseData();
     }
 
-    /**
-     * @method void loadConfiguration()
-     * 
-     * This function loads the service configuration from the file that is defined under
-     * $this->config_file. The function checks for the existance of the file and tries to 
-     * load it using parse_ini_file(). 
-     *
-     * This function expects your configuration file to be in the php .ini format.
-     */
-    protected function loadConfiguration() {        
-        if (!empty($this->config_file))
-        {
-            if (isset($this->config_path) && count($this->config_path))
-            {
-                foreach ($this->config_path as $path)
-                {
-                    if (file_exists($path . '/' . $this->config_file)) 
-                    {
-                        $cfg = parse_ini_file($this->config_file, true); // try catch?
-                        if (empty($cfg)) 
-                        {
-                            $this->status = RESTling::UNINITIALIZED;
-                        }
-                        else 
-                        {
-                            $this->config = $cfg;                
-                        }
-                        break;
-                    }
-                }
-            }
-            else if (file_exists($this->config_file)) 
-            {
-                $cfg = parse_ini_file($this->config_file, true); // try catch?
-                if (empty($cfg)) 
-                {
-                    $this->status = RESTling::UNINITIALIZED;
-                }
-                else 
-                {
-                    $this->config = $cfg;                
-                }
-            }
-        }
-    }
-    
-    
      /**
      * @method void initializeRun()
      *
      * This function is used to prepare all internal setup that is required BEFORE the
-     * request is actually handled. This may include setting up a database handler and other 
+     * request is actually handled. This may include setting up a database handler and other
      * parameters of the process
      *
      * If the internal initialization fails, this function must set the service status to
@@ -561,9 +506,9 @@ class RESTling extends Logger
      * status property to RESTling::BAD_URI in order to avoid further processing.
      */
     protected function validateURI()
-    {	
+    {
     	$this->log('enter validateURI');
-        $uri = $_SERVER['REQUEST_URI']; 
+        $uri = $_SERVER['REQUEST_URI'];
         // decides whether or not to run the service
         if (!empty($this->uri) &&
             strncmp($uri, $this->uri, strlen($this->uri)) !== 0)
@@ -584,21 +529,21 @@ class RESTling extends Logger
                 $ruri = preg_replace('/\?.*$/', '', $ruri);
                 $this->path_info = $ruri;
             }
-            else if (!empty($_SERVER['PATH_INFO'])) 
+            else if (!empty($_SERVER['PATH_INFO']))
             {
                 $this->path_info = $_SERVER['PATH_INFO'];
                 // remove any leading or trailing slashes
                 $this->path_info = preg_replace('/^\/*|\/*$/', '', $this->path_info);
             }
-            
+
             if (!empty($this->path_info))
             {
                 $args = explode('/', $this->path_info);
-                if (isset($args) && count($args) > 0) 
+                if (isset($args) && count($args) > 0)
                 {
                     $this->operands = $args;
                 }
-                else 
+                else
                 {
                     $this->operands = array();
                 }
@@ -609,7 +554,7 @@ class RESTling extends Logger
     /**
      * @method void validateMethod()
      *
-     * Handles the second phase of the run process. This method tests whether the 
+     * Handles the second phase of the run process. This method tests whether the
      * requested method is allowed. If the service class does not implement
      * a method handler for the HTTP operation this method sets the status property
      * to RESTling::BAD_METHOD.
@@ -621,16 +566,16 @@ class RESTling extends Logger
         $meth = $_SERVER['REQUEST_METHOD'];
         $this->method = $meth;
     }
-    
+
     /**
      * @method void loadData()
      *
-     * This method is triggered when the service catches a PUT or POST request in order to 
-     * load structured (non url-encoded) data into the business logic. By default this method 
-     * expects a JSON string as input. If the data fails to parse as JSON this method sets 
-     * the status property to RESTling::BAD_DATA. 
+     * This method is triggered when the service catches a PUT or POST request in order to
+     * load structured (non url-encoded) data into the business logic. By default this method
+     * expects a JSON string as input. If the data fails to parse as JSON this method sets
+     * the status property to RESTling::BAD_DATA.
      *
-     * In case a service expects different data formats of input this method has to be 
+     * In case a service expects different data formats of input this method has to be
      * overwridden.
      */
     protected function loadData() {
@@ -648,36 +593,36 @@ class RESTling extends Logger
             $this->status = RESTling::BAD_DATA;
         }
     }
-    
+
      /**
       * @method void prepareOperation()
       *
-      * This method builds the method name or the service handler and test the 
+      * This method builds the method name or the service handler and test the
       * logical presence of this handler. If the service class does not implement
       * a method handler for the requested operation this method sets the status property
       * to RESTling::BAD_OPERATION.
       */
-    protected function prepareOperation() 
+    protected function prepareOperation()
     {
         $this->operation = "handle_" . $this->method;
     }
-    
+
     /**
-     * @method void verifyOperation() 
+     * @method void validateOperation()
      *
      * This method provides the application level verification whether an operation should be
-     * executed or not. This might be the case because a caller might not have sufficient 
+     * executed or not. This might be the case because a caller might not have sufficient
      * privileges for running the operation.
-     * 
+     *
      * If a service requires operation verification as part of the business logic it must
      * implement this method.
-     * 
+     *
      * If the operation is forbidden in the context of the given request, then this method
      * must set the status RESTling::OPERATION_FORBIDDEN.
      */
-    protected function verifyOperation() 
+    protected function validateOperation()
     {}
-    
+
     /**
      * private @method void checkOperation()
      *
@@ -696,17 +641,35 @@ class RESTling extends Logger
     /**
      * @method void validateHeader()
      *
-     * Handles the third phase of the run process. A sub-class should use this method
-     * for session management or other header related tasks.
+     * Handles the second phase of the run process. At this level you would implement
+     * Cookie validation or OAuth. The header validation just confirms the correctness of
+     * the header but no ACL or method level validation. This should be done by
+     * the validateOperation() method
      *
-     * If the header is not correctly validated for running the requested operation,
-     * this class needs to set the status property to RESTling::BAD_HEADER.
+     * RESTling expects header validator objects that have at least two functions.
+     * Ideally, one would subclass the RESTlingValidator class. These validator objects are
+     * added to the RESTling class by using the addValidator($validator) method.
      *
-     * If the header validation is incusscessful this method should also set the
-     * response information that is sent to the client.
+     * If the header validation is not successful the validator method should also set the
+     * response information that is sent to the client. (by default 401 in RESTlingValidator)
      */
-    protected function validateHeader()
-    {}
+    private function validateHeader()
+    {
+        foreach ($this->headerValidators as $validator) {
+            if (!$validator->validate()) {
+                $this->status = RESTling::BAD_HEADER;
+                $this->response_code = $validator->error();
+                break;
+            }
+        }
+    }
+
+    public function addValidator($validatorObject)
+    {
+        $this->headerValidators[] = $validatorObject;
+    }
+
+
 
     /**
      * @method void responseCode()
@@ -879,7 +842,7 @@ class RESTling extends Logger
         {
             if ( $this->status == RESTling::OK &&
                 ($this->response_code == 200 || empty($this->response_code)) )
-            {   
+            {
                 $outputfunction = 'text_message';
                 if (!empty($this->response_type)) {
                     switch ( strtolower($this->response_type) )
@@ -897,7 +860,7 @@ class RESTling extends Logger
                             break;
                     }
                 }
-                    
+
                 if ( method_exists($this, 'respond_'. $outputfunction) )
                 {
                     call_user_func(array($this, 'respond_'. $outputfunction));
@@ -924,46 +887,6 @@ class RESTling extends Logger
         $this->data = "OK";
     }
 
-    /**
-     * @method service_uri($uri)
-     *
-     * @param $uri: the local portion of the Base URI of the service.
-     *
-     * This function is a helper function to override the base URI from an external configuration.
-     */
-    public function service_uri($uri)
-    {
-        $this->uri = $uri;
-    }
-
-    /**
-     * @method setData($data)
-     *
-     * @param $data: data object to be returned as a response of the request
-     *
-     * This function is a convenience function to setting the response data of the service.
-     *
-     * The normal way to do this is to set the dataobject directly.
-     */
-    protected function setData($data)
-    {
-        $this->data = $data;
-    }
-
-
-    /**
-     * @method setDataStash($data)
-     *
-     * @param $data: data object to be returned as a response of the request
-     *
-     * This function is a convenience function to setting the response data of the service.
-     *
-     * The normal way to do this is to set the dataobject directly.
-     */
-    protected function setDataStash($data)
-    {
-        $this->data = $data;
-    }
 
     /** **********************************************************************
      * COMMON HTTP RESPONSES
@@ -1058,9 +981,9 @@ class RESTling extends Logger
         {
             $this->no_content();
         }
-        else 
+        else
         {
-            $this->respond_with_message($this->data);   
+            $this->respond_with_message($this->data);
         }
     }
 
@@ -1095,7 +1018,7 @@ class RESTling extends Logger
         $this->response_code = 400;
         $this->data = $message;
     }
-    
+
     /**
      * @method not_implemented([$message])
      *
@@ -1103,7 +1026,7 @@ class RESTling extends Logger
      *
      * returns the 501 Not Implemented error for all call errors.
      *
-     * this method is handy for prototyping a service API. 
+     * this method is handy for prototyping a service API.
      */
     protected function not_implemented($message="")
     {
@@ -1112,17 +1035,17 @@ class RESTling extends Logger
         $this->response_code = 501;
         $this->data = $message;
     }
-    
+
     protected function missing() {
-        $this->not_implemented();   
+        $this->not_implemented();
     }
-    
+
     /**
      * @method unavailable([$message])
      *
      * @param misc $message (optional) extra message to be send to the client
-     * 
-     * Sends the 503 error message to the client. This method is typically triggered in the 
+     *
+     * Sends the 503 error message to the client. This method is typically triggered in the
      * service fails with a RESTling::UNINITIALIZED status.
      */
     protected function unavailable($message="")
@@ -1132,7 +1055,7 @@ class RESTling extends Logger
         $this->response_code = 503;
         $this->data = $message;
     }
-    
+
     /**
      * @method authentication_required([$message])
      *
@@ -1216,19 +1139,19 @@ class RESTling extends Logger
           $this->response_code = 410;
           $this->data = $message;
     }
-    
+
     /**
      * @method precondition_failed([$message])
      *
-     * This function should be used in case of errors during validateHeader(). 
-     * 
+     * This function should be used in case of errors during validateHeader().
+     *
      * Typically this function is automatically called if the service $status is set to
      * RESTling::BAD_HEADER.
      */
-    protected function precondition_failed($message="") 
+    protected function precondition_failed($message="")
     {
         $this->response_code = 412;
-        if (empty($this->data)) 
+        if (empty($this->data))
         {
             $this->data = $message;
         }

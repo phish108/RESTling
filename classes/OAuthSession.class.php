@@ -1,7 +1,7 @@
 <?php
 
 /**
- * SessionManagement is responsible for all OAuth management and verification tasks.
+ * OAuthSession is responsible for all OAuth management and verification tasks.
  *
  * all access token management happens here!
  *
@@ -13,7 +13,7 @@
  *
  * if also contains a small function of invalidating access keys
  */
-class OAuthSession extends Logger
+class OAuthSession extends RESTlingValidator
 {
     const TIMEOUT_DELTA = 86400;
 
@@ -38,6 +38,8 @@ class OAuthSession extends Logger
     protected $verificationCode;
     protected $oauthState;
 
+    protected $validationMode = 'use';
+
     public function __construct($dbh)
     {
         $this->setDebugMode(true);
@@ -47,6 +49,43 @@ class OAuthSession extends Logger
         $this->oauth = new OAuthProvider();
         $this->oauth->setParam('_', NULL);
         $this->oauthState = OAUTH_OK;
+    }
+
+    /**
+     * pre service invocation
+     *
+     * RESTling calls the validate function for all
+     * header validators;
+     */
+    public function validate()
+    {
+        $this->mark();
+        switch ($this->validationMode) {
+            case 'invalidate':
+                // active tokens will be invalidated (deleted)
+                break;
+            case 'register':
+                // request a new consumer token
+                break;
+            case 'request':
+                // get a new request token requires a consumer token
+                $this->validateConsumerToken();
+                break;
+            case 'authorize':
+                // everything before access can be verified
+                $this->validateRequestToken();
+                break;
+            case 'access':
+                // send verification code to obtain an access token
+                $this->session->verifyRequestToken();
+                break;
+            case 'use':
+            default:
+                //  normal access
+                $this->validateAccessToken();
+                break;
+        }
+        return ($this->getOAuthState() === OAUTH_OK);
     }
 
     /**
@@ -130,7 +169,7 @@ class OAuthSession extends Logger
             $this->log("request verified");
             return true;
         }
-        
+
         return false;
     }
 
@@ -142,7 +181,7 @@ class OAuthSession extends Logger
     public function accessVerified()
     {
         $this->log("user id is " . $this->userID);
-        
+
         if ($this->oauthState === OAUTH_OK &&
             !empty($this->accessToken) &&
             !empty($this->accessTokenSecret) &&
@@ -182,7 +221,7 @@ class OAuthSession extends Logger
     public function verifyUser($usermail, $credentialhash)
     {
         $this->mark('>>>>>>> LOGIN');
-        
+
         // we should use a user class for this handling
         // $this->user->load($usermail);
         // $userid = $this->user->id();
@@ -197,11 +236,11 @@ class OAuthSession extends Logger
                 $row = $res->fetchRow();
                 $userid = $row[0];
                 $pwHash = $row[1];
-                
+
                 $verificationhash = sha1($this->requestTokenSecret . $this->consumerSecret . $pwHash);
                 $this->log('local hash '. $verificationhash);
                 $this->log('remote hash' . $credentialhash);
-                
+
                 if ($verificationhash == $credentialhash)
                 {
                     $this->log('YEY The user is authenticated!!');
