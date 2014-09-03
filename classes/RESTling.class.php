@@ -121,6 +121,8 @@ class RESTling extends Logger
      * client.
      */
     protected $data;
+    protected $input;
+    protected $inputData;
 
     protected $uri;           ///< string, variable to constrain the service to be called only in a predefined context.
     protected $bURIOK = true; ///< boolean, obsolete variable for identifying valid service calls.
@@ -576,16 +578,36 @@ class RESTling extends Logger
      */
     protected function loadData() {
         $content = file_get_contents("php://input");
-//        $this->log('data content is ' . $content);
         $data = json_decode($content, true);
         if (isset($data))
         {
-//            $this->log('data loading is ok');
+
             $this->input = $data;
+
+            if (strlen($data)) {
+                $ct = $_SERVER['CONTENT_TYPE'];
+                $this->log('data has content type ' . $ct);
+
+                switch ($ct) {
+                    case 'application/json':
+                        $this->inputData = json_decode($this->input);
+                        break;
+                    case 'application/x-www-form-urlencoded':
+                        // all form data is stored in $_POST
+                        if (empty($_POST)) {
+                            // populate POST
+                            $_POST = array();
+                            parse_str($this->input, $_POST);
+                        }
+                        $this->inputData = $_POST;
+                        break;
+                    default;
+                        break;
+                }
+            }
         }
         else
         {
-//            $this->log('bad data');
             $this->status = RESTling::BAD_DATA;
         }
     }
