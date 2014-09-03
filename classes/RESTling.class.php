@@ -576,16 +576,16 @@ class RESTling extends Logger
      */
     protected function loadData() {
         $content = file_get_contents("php://input");
-        $this->log('data content is ' . $content);
+//        $this->log('data content is ' . $content);
         $data = json_decode($content, true);
         if (isset($data))
         {
-            $this->log('data loading is ok');
+//            $this->log('data loading is ok');
             $this->input = $data;
         }
         else
         {
-            $this->log('bad data');
+//            $this->log('bad data');
             $this->status = RESTling::BAD_DATA;
         }
     }
