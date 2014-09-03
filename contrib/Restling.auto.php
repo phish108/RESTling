@@ -7,13 +7,13 @@
      * initialization of your root script.
      */
     spl_autoload_register(function ($class) {
-        $path = 'include/RESTling/classes/' . $class . '.class.php';
+        $path = '../classes/' . $class . '.class.php';
         $prefixes = explode(PATH_SEPARATOR, get_include_path());
         foreach ( $prefixes as $p ) {
            if ( file_exists( $p . "/" . $path ) ) {
-              include_once 'include/RESTling/classes/' . $class . '.class.php';
+              include_once $path;
            }
-        }       
+        }
 
         return false;
     });

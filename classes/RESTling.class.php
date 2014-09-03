@@ -135,7 +135,7 @@ class RESTling extends Logger
 
     protected $operation;     ///< string, function name of the operation to be called.
 
-    private headerValidators; ///< array, list of validators to be used
+    private $headerValidators; ///< array, list of validators to be used
 
     public function __construct()
     {
@@ -507,22 +507,22 @@ class RESTling extends Logger
      */
     protected function validateURI()
     {
-    	$this->log('enter validateURI');
+    	// $this->log('enter validateURI');
         $uri = $_SERVER['REQUEST_URI'];
         // decides whether or not to run the service
         if (!empty($this->uri) &&
             strncmp($uri, $this->uri, strlen($this->uri)) !== 0)
         {
             // we test the URI only if the service has the URI set
-            $this->log('invalid URI');
+            // $this->log('invalid URI');
             $this->status = RESTling::BAD_URI;
         }
         else {
-            $this->log('strip the uri');
+            // $this->log('strip the uri');
             // now strip the pathinfo (if the URI is set)
             if (!empty($this->uri))
             {
-                $this->log('valid URI');
+                // $this->log('valid URI');
                 $ruri = substr($uri, strlen($this->uri));
                 // remove any leading or trailing slashes
                 $ruri = preg_replace('/^\/*|\/*$/', '', $ruri);
@@ -531,23 +531,30 @@ class RESTling extends Logger
             }
             else if (!empty($_SERVER['PATH_INFO']))
             {
+                // $this->log('got internal pathinfo');
                 $this->path_info = $_SERVER['PATH_INFO'];
                 // remove any leading or trailing slashes
                 $this->path_info = preg_replace('/^\/*|\/*$/', '', $this->path_info);
             }
 
+            $this->operands = array();
             if (!empty($this->path_info))
             {
+                // $this->log('stripped pathinfo ' . $this->path_info);
                 $args = explode('/', $this->path_info);
                 if (isset($args) && count($args) > 0)
                 {
+                    //$this->log('append path args');
                     $this->operands = $args;
                 }
-                else
-                {
-                    $this->operands = array();
-                }
+                // else
+                // {
+                //     $this->log('no args');
+                // }
             }
+            // else {
+            //     $this->log('called without path');
+            // }
         }
     }
 

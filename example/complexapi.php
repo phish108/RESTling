@@ -8,7 +8,7 @@
 //
 // All other method and path combinations will fail with a 405 response error
 
-include('include/RESTling/contrib/Restling.auto.php');
+include('../contrib/Restling.auto.php');
 
 class ComplexAPIExample extends RESTling
 {
@@ -26,8 +26,7 @@ class ComplexAPIExample extends RESTling
             // if there is exactly 1 path_info level, then we use that for determing the 'service mode'.
             $this->apimode = $api[0];
         }
-        else
-        {
+        else if (count($api) != 0) {
             // this example allows only one level of the path_info depth.
             $this->status = RESTling::BAD_URI;
         }
