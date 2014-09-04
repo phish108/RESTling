@@ -123,6 +123,8 @@ class RESTling extends Logger
     protected $data;
     protected $input;
     protected $inputData;
+    protected $query;
+    protected $queryParam;
 
     protected $uri;           ///< string, variable to constrain the service to be called only in a predefined context.
     protected $bURIOK = true; ///< boolean, obsolete variable for identifying valid service calls.
@@ -144,6 +146,17 @@ class RESTling extends Logger
         $this->mark( "********** NEW SERVICE REQUEST ***********");
         $this->corsHosts = array();
         $this->headerValidators = array();
+        $this->query = $_SERVER["QUERY_STRING"];
+        $this->queryParam = array();
+
+        // secure get string handling
+        $query  = preg_split('/[&;]+/', $this->query); // split at & or ;. Ignore sequences of separators
+
+        foreach( $query as $param )
+        {
+            list($name, $value) = explode('=', $param);
+            $this->queryParam[urldecode($name)][] = urldecode($value);
+        }
 
         $this->status = RESTling::OK;
     }
@@ -510,6 +523,7 @@ class RESTling extends Logger
     protected function validateURI()
     {
         $uri = $_SERVER['REQUEST_URI'];
+
         // decides whether or not to run the service
         if (!empty($this->uri) &&
             strncmp($uri, $this->uri, strlen($this->uri)) !== 0)
