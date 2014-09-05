@@ -687,11 +687,14 @@ class RESTling extends Logger
      */
     private function validateHeader()
     {
-        foreach ($this->headerValidators as $validator) {
-            if (!$validator->validate()) {
-                $this->status = RESTling::BAD_HEADER;
-                $this->response_code = $validator->error();
-                break;
+        if (!empty($this->headerValidators))
+        {
+            foreach ($this->headerValidators as $validator) {
+                if (!$validator->validate()) {
+                    $this->status = RESTling::BAD_HEADER;
+                    $this->response_code = $validator->error();
+                    break;
+                }
             }
         }
     }
