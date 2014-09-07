@@ -150,7 +150,11 @@ class RESTling extends Logger
         $this->queryParam = array();
 
         // secure get string handling
-        $query  = preg_split('/[&;]+/', $this->query); // split at & or ;. Ignore sequences of separators
+        $query = array();
+        if (!empty($this->query))
+        {
+            $query  = preg_split('/[&;]+/', $this->query); // split at & or ;. Ignore sequences of separators
+        }
 
         foreach( $query as $param )
         {
