@@ -354,9 +354,11 @@ class RESTling extends Logger
         }
     }
 
-    // use this method to selectively switch on data streaming
-    // this method must get called OUTSIDE the operation handler during the
-    // preparation phase.
+    /**
+     * use this method to selectively switch on data streaming
+     * this method must get called OUTSIDE the operation handler during the
+     * preparation phase.
+     */
     public function streaming($bool = 1)
     {
         $this->streamingData = $bool;
@@ -392,6 +394,9 @@ class RESTling extends Logger
      * headers and response code before running the operation. This is useful
      * for services that need to send a lot of data to the client or that
      * do selective proxying to background services.
+     *
+     * Note that as soon as you use the streaming API, you cannot change the
+     * the response headers during the operation
      */
     private function streamOperation()
     {
