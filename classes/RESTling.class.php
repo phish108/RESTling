@@ -120,18 +120,23 @@ class RESTling extends Logger
      * This property can hold arbitary data and the response_*() function will choose how to send it to the
      * client.
      */
-    protected $data;
-    protected $input;
-    protected $inputData;
-    protected $query;
-    protected $queryParam;
+    protected $data;          ///< result data
+
+    protected $method;        ///< string, contains the request method.
+
+    protected $path_info;     ///< string, contains service's path_info.
+    protected $operands;      ///< array, contains the path operands for the request.
+
+    protected $input;         ///< raw input data
+    protected $inputData;     ///< processed input data if input was structured information
+
+    protected $query;         ///< raw query paramter string
+    protected $queryParam;    ///< processed query paramter object (note that this can handle multiple parameters)
 
     protected $uri;           ///< string, variable to constrain the service to be called only in a predefined context.
     protected $bURIOK = true; ///< boolean, obsolete variable for identifying valid service calls.
-    protected $path_info;     ///< string, contains service's path_info.
-    protected $operands;      ///< array, contains the path operands for the request.
+
     protected $status;        ///< integer, contains the service's pipeline status.
-    protected $method;        ///< string, contains the request method.
 
     protected $withCORS    = true;
     protected $withCaching = false;
@@ -665,7 +670,6 @@ class RESTling extends Logger
         $data = json_decode($content, true);
         if (isset($data))
         {
-
             $this->input = $data;
 
             if (strlen($data)) {
