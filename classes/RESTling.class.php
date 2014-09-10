@@ -140,6 +140,7 @@ class RESTling extends Logger
     protected $operation;     ///< string, function name of the operation to be called.
 
     private $headerValidators; ///< array, list of validators to be used
+    private $streamingData = 0; ///< boolean value that determines whether operations should be "processed" or "streamed".
 
     public function __construct()
     {
@@ -341,8 +342,72 @@ class RESTling extends Logger
      */
     public function run()
     {
-        // split the process into phases
+        $this->prepareRun();
 
+        if ($this->streamingData)
+        {
+            $this->streamOperation();
+        }
+        else
+        {
+            $this->processOpearation();
+        }
+    }
+
+    // use this method to selectively switch on data streaming
+    // this method must get called OUTSIDE the operation handler during the
+    // preparation phase.
+    public function streaming($bool = 1)
+    {
+        $this->streamingData = $bool;
+    }
+
+    /**
+     * @private @method processOperation
+     *
+     * Process will first run the operation and then deliver its results to
+     * the client. The results include the headers. This allows the operation
+     * to change the error codes of the result.
+     */
+    private function processOperation()
+    {
+        if ($this->status == RESTling::OK)
+        {
+            // now call the operation
+            call_user_func(array($this, $this->operation)); // try catch?
+        }
+
+        $this->handleStatus();
+
+        // generate the response
+        $this->responseCode();
+        $this->responseHeaders();
+        $this->respondData();
+    }
+
+    /**
+     * @private @method streamOperation()
+     *
+     * stream() is very much like process, but stream will first deliver the
+     * headers and response code before running the operation. This is useful
+     * for services that need to send a lot of data to the client or that
+     * do selective proxying to background services.
+     */
+    private function streamOperation()
+    {
+        $this->handleStatus();
+        $this->responseCode();
+        $this->responseHeaders();
+
+        if ($this->status == RESTling::OK)
+        {
+            // now call the operation
+            call_user_func(array($this, $this->operation)); // try catch?
+        }
+    }
+
+    protected function prepareRun()
+    {
         if ( $this->status == RESTling::OK)
         {
             $this->initializeRun();
@@ -397,13 +462,10 @@ class RESTling extends Logger
 
             $this->operation = $oper;
         }
+    }
 
-        if ($this->status == RESTling::OK)
-        {
-            // now call the operation
-            call_user_func(array($this, $this->operation)); // try catch?
-        }
-
+    protected function handleStatus()
+    {
         if ($this->status != RESTling::OK
             && empty($this->response_code))
         {
@@ -489,11 +551,6 @@ class RESTling extends Logger
                 break;
             }
         }
-
-        // generate the response
-        $this->responseCode();
-        $this->responseHeaders();
-        $this->responseData();
     }
 
      /**
@@ -516,13 +573,17 @@ class RESTling extends Logger
     /**
      * @method void validateURI()
      *
-     * Handles the first phase of the run process. This method determines if
+     * processes the request URL during the first phase of the run process. This method determines if
      * the service is correctly called and extracts the path_info value correctly
      * for further processing (PHP's native PATH_INFO property gets confused from
      * time to time).
      *
      * If the URI cannot be validated correctly, this method has to set the
      * status property to RESTling::BAD_URI in order to avoid further processing.
+     *
+     * The method will clean and process the service's PATH_INFO. The result is
+     * split into an array, so it can be easily processed for API detection. For further
+     * processing you typically want to extract the
      */
     protected function validateURI()
     {
@@ -708,8 +769,6 @@ class RESTling extends Logger
         $this->headerValidators[] = $validatorObject;
     }
 
-
-
     /**
      * @method void responseCode()
      *
@@ -824,6 +883,8 @@ class RESTling extends Logger
         // force IE to obey!
         header('X-UA-Compatible: IE=edge');
 
+        header('content-type: ' . strtolower($this->mapContentType($this->response_type)));
+
         if ($this->withCORS)
         {
             $origin = '';
@@ -856,8 +917,30 @@ class RESTling extends Logger
         }
     }
 
+    // if you need
+    protected function mapContentType($type)
+    {
+        $rv = 'content-type: text/plain';
+        if (!empty($type)) {
+            switch ( strtolower($type) )
+            {
+            case 'json':
+                $rv = 'application/json';
+                break;
+            case 'form':
+                $rv = 'content-type: application/x-www-form-urlencoded';
+                break;
+            case 'text':
+                break;
+            default:
+                break;
+            }
+        }
+        return $rv;
+    }
+
     /**
-     * @method void responseData()
+     * @method void respondData()
      *
      * This method will generate the response data for the request.
      *
@@ -875,7 +958,7 @@ class RESTling extends Logger
      * For error messages this method uses the "respond_with_message" method
      * for automatically determinating what information will be sent to the user.
      */
-    protected function responseData()
+    protected function respondData()
     {
         if (!empty($this->data))
         {
@@ -939,7 +1022,7 @@ class RESTling extends Logger
     protected function respond_json_data()
     {
         $this->log('respond JSON data');
-        header('content-type: application/json');
+
         if ( !empty($this->data))
         {
             if (is_array($this->data) || is_object($this->data))
@@ -972,7 +1055,6 @@ class RESTling extends Logger
     protected function respond_form_encoded()
     {
         $this->log('respond FORM encoded data');
-        header('content-type: application/x-www-form-urlencoded');
         $retval = "";
         if (!empty($this->data))
         {
@@ -1220,13 +1302,11 @@ class RESTling extends Logger
         {
             if (is_scalar($message))
             {
-                header('content-type: text/plain');
                 echo($message);
             }
             elseif (is_array($message) ||
                     is_object($message))
             {
-                header('content-type: application/json');
                 echo(json_encode($message));
             }
         }
