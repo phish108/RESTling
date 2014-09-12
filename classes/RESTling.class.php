@@ -124,17 +124,13 @@ class RESTling extends Logger
 
     protected $method;        ///< string, contains the request method.
 
-    protected $path_info;     ///< string, contains service's path_info.
-    protected $operands;      ///< array, contains the path operands for the request.
+    protected $path_info;     ///< array, contains the path operands for the request.
 
     protected $input;         ///< raw input data
     protected $inputData;     ///< processed input data if input was structured information
 
-    protected $query;         ///< raw query paramter string
+    protected $query;         ///< raw query paramter string, use this value if you expect a single string.
     protected $queryParam;    ///< processed query paramter object (note that this can handle multiple parameters)
-
-    protected $uri;           ///< string, variable to constrain the service to be called only in a predefined context.
-    protected $bURIOK = true; ///< boolean, obsolete variable for identifying valid service calls.
 
     protected $status;        ///< integer, contains the service's pipeline status.
 
@@ -152,8 +148,13 @@ class RESTling extends Logger
         $this->mark( "********** NEW SERVICE REQUEST ***********");
         $this->corsHosts = array();
         $this->headerValidators = array();
-        $this->query = $_SERVER["QUERY_STRING"];
+
+        $this->query = $_SERVER["QUERY_STRING"]; // normally ends in _GET, but qstring parsing in php sucks
+
         $this->queryParam = array();
+        $this->path_info  = array();
+
+        $this->method = $_SERVER['REQUEST_METHOD'];
 
         // secure get string handling
         $query = array();
@@ -166,6 +167,17 @@ class RESTling extends Logger
         {
             list($name, $value) = explode('=', $param);
             $this->queryParam[urldecode($name)][] = urldecode($value);
+        }
+
+        // pull up the path info
+        $path_info = $_SERVER['PATH_INFO'];
+        if (!empty($path_info))
+        {
+            // remove any leading or trailing slashes
+            $path_info = preg_replace('/^\/*|\/*$/', '', $path_info);
+            // condense multiple slashes to one
+            $path_info = preg_replace('/\/+/', '/', $path_info);
+            $this->path_info = explode('/', $this->path_info);
         }
 
         $this->status = RESTling::OK;
@@ -207,7 +219,6 @@ class RESTling extends Logger
     {
         // host can be an array. The methods are an array too. Note that this is not associative and
         // that the methods are allowed for the provided hosts.
-
         if (gettype($methods) === 'string')
         {
             $methods = array($methods);
@@ -266,12 +277,10 @@ class RESTling extends Logger
      * The  power horse of the service. This function decides which handler methods should be
      * called for the different HTTP request methods.
      *
-     * The run process has 7 phases
+     * The run process has 5 phases
      *
      * 0. internal run initialization (including loading of external configuration files)
      * 1. Header validation
-     * 2. URI validation
-     * 3. Method validation
      * 4. Operation preparation
      * 5. Operation verification
      * 6. Operation handling
@@ -349,74 +358,49 @@ class RESTling extends Logger
     {
         $this->prepareRun();
 
-        if ($this->streamingData)
-        {
-            $this->streamOperation();
-        }
-        else
-        {
-            $this->processOpearation();
-        }
-    }
-
-    /**
-     * use this method to selectively switch on data streaming
-     * this method must get called OUTSIDE the operation handler during the
-     * preparation phase.
-     */
-    public function streaming($bool = 1)
-    {
-        $this->streamingData = $bool;
-    }
-
-    /**
-     * @private @method processOperation
-     *
-     * Process will first run the operation and then deliver its results to
-     * the client. The results include the headers. This allows the operation
-     * to change the error codes of the result.
-     */
-    private function processOperation()
-    {
-        if ($this->status == RESTling::OK)
+        if ($this->status == RESTling::OK
+            && !empty($this->operation))
         {
             // now call the operation
             call_user_func(array($this, $this->operation)); // try catch?
         }
 
-        $this->handleStatus();
-
-        // generate the response
-        $this->responseCode();
-        $this->responseHeaders();
-        $this->respondData();
+        // ensure that the response code and the headers are properly set
+        $this->stream();
+        // ensure that the client actually sends all data.
+        if (!empty($this->data))
+        {
+            $this->respondData();
+        }
     }
 
     /**
-     * @private @method streamOperation()
+     * @protected @method stream
      *
-     * stream() is very much like process, but stream will first deliver the
-     * headers and response code before running the operation. This is useful
-     * for services that need to send a lot of data to the client or that
-     * do selective proxying to background services.
+     * stream() handles all headers and response code handling.
+     *
+     * Use this function when the service operation seeks to continuily forward
+     * data to the client.
      *
      * Note that as soon as you use the streaming API, you cannot change the
-     * the response headers during the operation
+     * the response headers during the operation. Therefore, stream() is best called
+     * during the validateOperation() or operation execution.
      */
-    private function streamOperation()
+    public function stream()
     {
-        $this->handleStatus();
-        $this->responseCode();
-        $this->responseHeaders();
-
-        if ($this->status == RESTling::OK)
+        if ($this->streamingData != 1)
         {
-            // now call the operation
-            call_user_func(array($this, $this->operation)); // try catch?
+            $this->streamingData = 1;
+            $this->handleStatus();
+
+            // generate the response
+            $this->responseCode();
+            $this->responseHeaders();
         }
     }
 
-    protected function prepareRun()
+
+    private function prepareRun()
     {
         if ( $this->status == RESTling::OK)
         {
@@ -426,16 +410,6 @@ class RESTling extends Logger
         if ($this->status == RESTling::OK)
         {
             $this->validateHeader();
-        }
-
-        if ( $this->status == RESTling::OK)
-        {
-            $this->validateURI();
-        }
-
-        if ($this->status == RESTling::OK)
-        {
-            $this->validateMethod();
         }
 
         if ($this->status === RESTling::OK &&
@@ -453,7 +427,7 @@ class RESTling extends Logger
             // ensure that handle_OPTIONS works even with exotic prepareOperation methods
             if ($this->method == 'OPTIONS')
             {
-                $this->operation = 'handle_OPTIONS';
+                $this->operation = 'send_options';
             }
 
             $this->checkOperation();
@@ -500,7 +474,7 @@ class RESTling extends Logger
                 break;
             case RESTling::BAD_URI:
                 /**
-                 * If the service fails during validateURI() the service will always respond 404 Not Found.
+                 * If at any stage the service identifies a bad URI it will always respond 404 Not Found.
                  * This indicates that the requested URL is not available on the server.
                  */
                 $this->log('malformed URI detected!');
@@ -578,80 +552,6 @@ class RESTling extends Logger
     protected function initializeRun()
     {
     	$this->log("enter intializeRun in RESTling");
-    }
-
-    /**
-     * @method void validateURI()
-     *
-     * processes the request URL during the first phase of the run process. This method determines if
-     * the service is correctly called and extracts the path_info value correctly
-     * for further processing (PHP's native PATH_INFO property gets confused from
-     * time to time).
-     *
-     * If the URI cannot be validated correctly, this method has to set the
-     * status property to RESTling::BAD_URI in order to avoid further processing.
-     *
-     * The method will clean and process the service's PATH_INFO. The result is
-     * split into an array, so it can be easily processed for API detection. For further
-     * processing you typically want to extract the
-     */
-    protected function validateURI()
-    {
-        $uri = $_SERVER['REQUEST_URI'];
-
-        // decides whether or not to run the service
-        if (!empty($this->uri) &&
-            strncmp($uri, $this->uri, strlen($this->uri)) !== 0)
-        {
-            // we test the URI only if the service has the URI set
-            // $this->log('invalid URI');
-            $this->status = RESTling::BAD_URI;
-        }
-        else {
-            // $this->log('strip the uri');
-            // now strip the pathinfo (if the URI is set)
-            if (!empty($this->uri))
-            {
-                $ruri = substr($uri, strlen($this->uri));
-                // remove any leading or trailing slashes
-                $ruri = preg_replace('/^\/*|\/*$/', '', $ruri);
-                $ruri = preg_replace('/\?.*$/', '', $ruri);
-                $this->path_info = $ruri;
-            }
-            else if (!empty($_SERVER['PATH_INFO']))
-            {
-                $this->path_info = $_SERVER['PATH_INFO'];
-                // remove any leading or trailing slashes
-                $this->path_info = preg_replace('/^\/*|\/*$/', '', $this->path_info);
-            }
-
-            $this->operands = array();
-            if (!empty($this->path_info))
-            {
-                $args = explode('/', $this->path_info);
-                if (isset($args) && count($args) > 0)
-                {
-                    //$this->log('append path args');
-                    $this->operands = $args;
-                }
-            }
-        }
-    }
-
-    /**
-     * @method void validateMethod()
-     *
-     * Handles the second phase of the run process. This method tests whether the
-     * requested method is allowed. If the service class does not implement
-     * a method handler for the HTTP operation this method sets the status property
-     * to RESTling::BAD_METHOD.
-     *
-     * The default method makes the method property available
-     */
-    protected function validateMethod()
-    {
-        $meth = $_SERVER['REQUEST_METHOD'];
-        $this->method = $meth;
     }
 
     /**
@@ -789,10 +689,13 @@ class RESTling extends Logger
      */
     protected function responseCode()
     {
-        if ( empty($this->data) &&
+        if (!$this->streamingData &&
+            empty($this->data) &&
             ($this->response_code === 200 || empty($this->response_code)) )
         {
             // the status is OK but no data is set by the service, so we respond 204
+            // but only if the service did not request to stream data. In this case the
+            // data property might be empty at this point.
             $this->respond_code = 204;
         }
 
@@ -1002,20 +905,26 @@ class RESTling extends Logger
                 $this->respond_with_message($this->data);
             }
         }
+
+        // empty the data property!
+        $this->data = null;
     }
 
     /**
-     * @method void handle_OPTIONS()
+     * @method void send_options()
      *
      * function for client interaction. Typically used for client interaction, such
      * as CORS negotiations.
      *
      * Some clients seem to refuse 204 responses for OPTIONS requests. Therefore,
      * This function always respondes OK by default.
+     *
+     * A service class may overwrite this method if ore complex options need to
+     * get returned to the client.
      */
-    protected function handle_OPTIONS()
+    protected function send_options()
     {
-        $this->data = "OK";
+        $this->data = "";
     }
 
 
