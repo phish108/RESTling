@@ -607,6 +607,9 @@ class RESTling extends Logger
       * logical presence of this handler. If the service class does not implement
       * a method handler for the requested operation this method sets the status property
       * to RESTling::BAD_OPERATION.
+      *
+      * NOTE: when you like to overload or extend the handler for OPTIONS request, one needs
+      * to overload the "send_options" method. (more detail there)
       */
     protected function prepareOperation()
     {
@@ -923,12 +926,12 @@ class RESTling extends Logger
      * Some clients seem to refuse 204 responses for OPTIONS requests. Therefore,
      * This function always respondes OK by default.
      *
-     * A service class may overwrite this method if ore complex options need to
-     * get returned to the client.
+     * A service class may overload this method if ore complex options need to
+     * get returned to your clients.
      */
     protected function send_options()
     {
-        $this->data = "";
+        $this->data = "OK";
     }
 
 
