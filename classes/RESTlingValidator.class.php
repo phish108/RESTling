@@ -1,7 +1,7 @@
 <?php
 class RESTlingValidator extends Logger
 {
-    protected $service;
+    protected $service; ///< internal handler for the service class.
 
     public function setService($service)
     {
@@ -16,7 +16,7 @@ class RESTlingValidator extends Logger
     public function error()
     {
         // return authentication required by default
-        return 401;
+        $this->service->authentication_required();
     }
 }
 ?>

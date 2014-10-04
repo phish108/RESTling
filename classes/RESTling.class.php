@@ -606,6 +606,9 @@ class RESTling extends Logger
       * logical presence of this handler. If the service class does not implement
       * a method handler for the requested operation this method sets the status property
       * to RESTling::BAD_OPERATION.
+      *
+      * NOTE: when you like to overload or extend the handler for OPTIONS request, one needs
+      * to overload the "send_options" method. (more detail there)
       */
     protected function prepareOperation()
     {
@@ -665,7 +668,7 @@ class RESTling extends Logger
             foreach ($this->headerValidators as $validator) {
                 if (!$validator->validate()) {
                     $this->status = RESTling::BAD_HEADER;
-                    $this->response_code = $validator->error();
+                    $validator->error();
                     break;
                 }
             }
@@ -674,8 +677,11 @@ class RESTling extends Logger
 
     public function addValidator($validatorObject)
     {
-        $this->headerValidators[] = $validatorObject;
-        $validatorObject->setService($this);
+        if (isset($validatorObject))
+        {
+            $this->headerValidators[] = $validatorObject;
+            $validatorObject->setService($this);
+        }
     }
 
     /**
@@ -919,12 +925,12 @@ class RESTling extends Logger
      * Some clients seem to refuse 204 responses for OPTIONS requests. Therefore,
      * This function always respondes OK by default.
      *
-     * A service class may overwrite this method if ore complex options need to
-     * get returned to the client.
+     * A service class may overload this method if more complex options need to
+     * get returned to your clients.
      */
     protected function send_options()
     {
-        $this->data = "";
+        $this->data = "OK";
     }
 
 
@@ -1036,7 +1042,7 @@ class RESTling extends Logger
      *
      * sends the 204 No Content response to the client on successfull operations that do not include data.
      */
-    protected function no_content()
+    public function no_content()
     {
            $this->log("204 OK but No Content ");
           // newer PHP version would use
@@ -1054,7 +1060,7 @@ class RESTling extends Logger
      *
      * returns the 400 Bad Request error for all call errors (e.g. if a bad item id has been passed).
      */
-    protected function bad_request($message="")
+    public function bad_request($message="")
     {
         $this->log("bad request");
         // newer PHP version would use
@@ -1072,7 +1078,7 @@ class RESTling extends Logger
      *
      * this method is handy for prototyping a service API.
      */
-    protected function not_implemented($message="")
+    public function not_implemented($message="")
     {
         $this->log("not implemented");
         // newer PHP version would use
@@ -1092,7 +1098,7 @@ class RESTling extends Logger
      * Sends the 503 error message to the client. This method is typically triggered in the
      * service fails with a RESTling::UNINITIALIZED status.
      */
-    protected function unavailable($message="")
+    public function unavailable($message="")
     {
         $this->log("service unavailable");
         // newer PHP version would use
@@ -1107,7 +1113,7 @@ class RESTling extends Logger
      *
      * responds a 401 Authentication Required to show the login screen
      */
-    protected function authentication_required($message="")
+    public function authentication_required($message="")
     {
            $this->log("401 Authentication required ");
           // newer PHP version would use
@@ -1122,10 +1128,10 @@ class RESTling extends Logger
      *
      * @param misc $message (optional) extra message to be send to the client
      *
-     * returns 403 errors. This should be used if the user is not allowed to access
-     * a function or resource
+     * returns 403 errors. This should be used if the user is not allowed to
+     * access a function or resource
      */
-    protected function forbidden($message="")
+    public function forbidden($message="")
     {
            $this->log("forbidden");
            $this->response_code = 403;
@@ -1140,7 +1146,7 @@ class RESTling extends Logger
      * Responds the 404 Not Found code to the client. Used to indicate that one or more requested
      * resources are not available to the system.
      */
-    protected function not_found($message="")
+    public function not_found($message="")
     {
            $this->log("Item not found");
 
@@ -1157,7 +1163,7 @@ class RESTling extends Logger
      * to indicate that the service has been called with a forbidden HTTP method by the
      * run() method.
      */
-    protected function not_allowed($message="")
+    public function not_allowed($message="")
     {
         $this->log("not allowed in RESTling");
         // newer PHP version would use
@@ -1174,7 +1180,7 @@ class RESTling extends Logger
      *
      * returns the 410 Gone response. Used to indicate successfull DELETE operations.
      */
-    protected function gone($message="")
+    public function gone($message="")
     {
            $this->log("requested object is gone!");
           // newer PHP version would use
@@ -1192,7 +1198,7 @@ class RESTling extends Logger
      * Typically this function is automatically called if the service $status is set to
      * RESTling::BAD_HEADER.
      */
-    protected function precondition_failed($message="")
+    public function precondition_failed($message="")
     {
         $this->response_code = 412;
         if (empty($this->data))
