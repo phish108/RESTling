@@ -399,7 +399,6 @@ class RESTling extends Logger
         }
     }
 
-
     private function prepareRun()
     {
         if ( $this->status == RESTling::OK)
@@ -676,6 +675,7 @@ class RESTling extends Logger
     public function addValidator($validatorObject)
     {
         $this->headerValidators[] = $validatorObject;
+        $validatorObject->setService($this);
     }
 
     /**
@@ -927,6 +927,11 @@ class RESTling extends Logger
         $this->data = "";
     }
 
+
+    public function getRawInput()
+    {
+        return $this->input;
+    }
 
     /** **********************************************************************
      * COMMON HTTP RESPONSES
