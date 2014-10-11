@@ -170,7 +170,16 @@ class RESTling extends Logger
         }
 
         // pull up the path info
-        $path_info = $_SERVER['PATH_INFO'];
+        $path_info = "";
+        if (array_key_exists("PATH_INFO", $_SERVER))
+        {
+            $path_info = $_SERVER['PATH_INFO'];
+        }
+        else
+        {
+            // newer PHP instances won't fillup the PATH_INFO from the REQUEST_URI under apache.
+            $path_info = preg_replace('/^.*\.php/', '', $_SERVER["REQUEST_URI"]);
+        }
         if (!empty($path_info))
         {
             // remove any leading or trailing slashes
