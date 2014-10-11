@@ -186,7 +186,7 @@ class RESTling extends Logger
             $path_info = preg_replace('/^\/*|\/*$/', '', $path_info);
             // condense multiple slashes to one
             $path_info = preg_replace('/\/+/', '/', $path_info);
-            $this->path_info = explode('/', $this->path_info);
+            $this->path_info = explode('/', $path_info);
         }
 
         $this->status = RESTling::OK;
