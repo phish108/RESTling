@@ -581,7 +581,7 @@ class RESTling extends Logger
             $this->input = $data;
 
             if (strlen($data)) {
-                $ct = $_SERVER['CONTENT_TYPE'];
+                $ct = explode(";", $_SERVER['CONTENT_TYPE'])[0];
                 $this->log('data has content type ' . $ct);
 
                 switch ($ct) {
