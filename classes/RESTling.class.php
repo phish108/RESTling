@@ -141,7 +141,8 @@ class RESTling extends Logger
     protected $operation;     ///< string, function name of the operation to be called.
 
     private $headerValidators; ///< array, list of validators to be used
-    private $streamingData = 0; ///< boolean value that determines whether operations should be "processed" or "streamed".
+
+    protected $streaming; ///< boolean value that determines whether operations should be "processed" or "streamed". Only set this property if you want to stream!
 
     public function __construct()
     {
@@ -180,13 +181,19 @@ class RESTling extends Logger
             // newer PHP instances won't fillup the PATH_INFO from the REQUEST_URI under apache.
             $path_info = preg_replace('/^.*\.php/', '', $_SERVER["REQUEST_URI"]);
         }
+
         if (!empty($path_info))
         {
             // remove any leading or trailing slashes
             $path_info = preg_replace('/^\/*|\/*$/', '', $path_info);
             // condense multiple slashes to one
             $path_info = preg_replace('/\/+/', '/', $path_info);
-            $this->path_info = explode('/', $path_info);
+
+            // don't explode empty paths
+            if (!empty($path_info))
+            {
+                $this->path_info = explode('/', $path_info);
+            }
         }
 
         $this->status = RESTling::OK;
@@ -374,13 +381,60 @@ class RESTling extends Logger
             call_user_func(array($this, $this->operation)); // try catch?
         }
 
+        $this->stream_headers();
+
         // ensure that the response code and the headers are properly set
-        $this->stream();
-        // ensure that the client actually sends all data.
+        if (isset($this->streaming) && $this->streaming)
+        {
+            $this->init_stream();
+            $this->stream();
+        }
+
+        // ensure that the client actually receives all data.
         if (!empty($this->data))
         {
-            $this->respondData();
+            // $this->mark('default ' . $this->data);
+            $this->respond();
         }
+
+        if (isset($this->streaming) && $this->streaming)
+        {
+            $this->end_stream();
+        }
+
+        $this->cleanup();
+    }
+
+    protected function init_stream()
+    {
+        $init_func = "init_stream_". $this->response_type;
+
+        if (method_exists($this, $init_func))
+        {
+            call_user_func(array($this, $init_func));
+        }
+    }
+
+    protected function end_stream()
+    {
+        $init_func = "end_stream_" . $this->response_type;
+
+        if (method_exists($this, $init_func))
+        {
+            call_user_func(array($this, $init_func));
+        }
+    }
+
+    protected function cleanup()
+    {}
+
+    protected function stream_headers()
+    {
+        $this->handleStatus();
+
+        // generate the response
+        $this->responseCode();
+        $this->responseHeaders();
     }
 
     /**
@@ -395,18 +449,7 @@ class RESTling extends Logger
      * the response headers during the operation. Therefore, stream() is best called
      * during the validateOperation() or operation execution.
      */
-    public function stream()
-    {
-        if ($this->streamingData != 1)
-        {
-            $this->streamingData = 1;
-            $this->handleStatus();
-
-            // generate the response
-            $this->responseCode();
-            $this->responseHeaders();
-        }
-    }
+    protected function stream() {}
 
     private function prepareRun()
     {
@@ -432,10 +475,10 @@ class RESTling extends Logger
             // this function normally sets $this->operation.
             $this->prepareOperation();
 
-            // ensure that handle_OPTIONS works even with exotic prepareOperation methods
+            // ensure that options() works even with exotic prepareOperation methods
             if ($this->method == 'OPTIONS')
             {
-                $this->operation = 'send_options';
+                $this->operation = 'options';
             }
 
             $this->checkOperation();
@@ -582,7 +625,6 @@ class RESTling extends Logger
 
             if (strlen($data)) {
                 $ct = explode(";", $_SERVER['CONTENT_TYPE'])[0];
-                $this->log('data has content type ' . $ct);
 
                 switch ($ct) {
                     case 'application/json':
@@ -616,12 +658,124 @@ class RESTling extends Logger
       * a method handler for the requested operation this method sets the status property
       * to RESTling::BAD_OPERATION.
       *
-      * NOTE: when you like to overload or extend the handler for OPTIONS request, one needs
-      * to overload the "send_options" method. (more detail there)
+      * prepareOperation() automatically checks for REST protocol functions in
+      * the format METHOD + "_" + PATH_INFO. All protocol functions are
+      * lower case! Therefore, the request
+      *
+      * ```HTTP
+      * GET /mysservice.php/foo
+      * ```
+      *
+      * translates into the following function
+      *
+      * ```php
+      * $myService->get_foo()
+      * ```
+      *
+      * Note: that path names will remain in the form they are written
+      *
+      * perpareOperation() tests for most significant match, first. Given the
+      * service class implementsthe following functions
+      *
+      * ```php
+      * Class MyService
+      *       extends RESTling
+      * {
+      *      protected function get()
+      *      {
+      *         $this->data = "call get";
+      *      }
+      *
+      *      protected function get_foo()
+      *      {
+      *         $this->data = "call for foo";
+      *      }
+      *
+      *      protected function get_foo_bar()
+      *      {
+      *         $this->data = "call for foo_bar";
+      *      }
+      * }
+      *```
+      *
+      * And given a request
+      *
+      * ```HTTP
+      * GET /myservice.php/foo/bar/baz
+      * ```
+      *
+      * Will return in the response "call for foo_bar", because there is no handler
+      * for the full path_info implemented and the most significant match is foo/bar.
+      *
+      * The function get_foo() will not get called.
+      *
+      * Whereas, given a request
+      *
+      * ```HTTP
+      * GET /myservice.php/foo/baz
+      * ```
+      *
+      * will return the response "call for foo", because there is no handler
+      * implemented for foo/baz. Therefore, get_foo() is the most significant
+      * match.
+      *
+      * If the service needs no special pathinfo handling, only method handlers
+      * are required. Thus, the request
+      *
+      * ```HTTP
+      * GET /myservice.php/bar/foo
+      * ```
+      *
+      * will return the response "call get".
       */
     protected function prepareOperation()
     {
-        $this->operation = "handle_" . $this->method;
+        // $this->operation = "handle_" . $this->method;
+
+        $m = strtolower($this->method);
+
+        $c = $this->path_info;
+
+        $this->operation = $this->findOperation($m, $c);
+    }
+
+    protected function findOperation($m, $p)
+    {
+        return $this->findMostSignificantOpMatch($m,$p);
+    }
+
+    protected function findMostSignificantOpMatch($method, $pathinfo)
+    {
+        $p = array();
+        $c = $pathinfo;
+        $this->status = RESTling::BAD_OPERATION;
+
+        while (!empty($c) &&
+               $this->status == RESTling::BAD_OPERATION)
+        {
+            $op = $method . "_" . implode("_", $c);
+
+            if (!method_exists($this, $op))
+            {
+                $this->status = RESTling::BAD_OPERATION;
+                array_unshift($p, array_pop($c));
+            }
+            else
+            {
+                $this->status = RESTling::OK;
+                $this->path_info = $p;
+                return $op;
+            }
+        }
+
+        // test if there is a plain HTTP verb function
+        if ($this->status == RESTling::BAD_OPERATION &&
+            method_exists($this, $method))
+        {
+            $this->status = RESTling::OK;
+            $this->path_info = $p;
+        }
+        return $method;
     }
 
     /**
@@ -656,7 +810,7 @@ class RESTling extends Logger
     }
 
     /**
-     * @method void validateHeader()
+* @method void validateHeader()
      *
      * Handles the second phase of the run process. At this level you would implement
      * Cookie validation or OAuth. The header validation just confirms the correctness of
@@ -677,7 +831,7 @@ class RESTling extends Logger
             foreach ($this->headerValidators as $validator) {
                 if (!$validator->validate()) {
                     $this->status = RESTling::BAD_HEADER;
-                    $validator->error();
+                    $this->data = $validator->error();
                     break;
                 }
             }
@@ -704,7 +858,7 @@ class RESTling extends Logger
      */
     protected function responseCode()
     {
-        if (!$this->streamingData &&
+        if (!isset($this->streaming) && $this->streaming &&
             empty($this->data) &&
             ($this->response_code === 200 || empty($this->response_code)) )
         {
@@ -867,7 +1021,7 @@ class RESTling extends Logger
     }
 
     /**
-     * @method void respondData()
+     * @method void respond()
      *
      * This method will generate the response data for the request.
      *
@@ -885,14 +1039,19 @@ class RESTling extends Logger
      * For error messages this method uses the "respond_with_message" method
      * for automatically determinating what information will be sent to the user.
      */
-    protected function respondData()
+    protected function respond($data=null)
     {
+        if (isset($data))
+        {
+            $this->data = $data;
+        }
+
         if (!empty($this->data))
         {
             if ( $this->status == RESTling::OK &&
                 ($this->response_code == 200 || empty($this->response_code)) )
             {
-                $outputfunction = 'text_message';
+                $outputfunction = 'text_plain';
                 if (!empty($this->response_type)) {
                     switch ( strtolower($this->response_type) )
                     {
@@ -926,7 +1085,9 @@ class RESTling extends Logger
     }
 
     /**
-     * @method void send_options()
+     * @method void options()
+     *
+     * Default OPTIONS handler.
      *
      * function for client interaction. Typically used for client interaction, such
      * as CORS negotiations.
@@ -936,8 +1097,10 @@ class RESTling extends Logger
      *
      * A service class may overload this method if more complex options need to
      * get returned to your clients.
+     *
+     * If you need to overload the options, you should call this function, too.
      */
-    protected function send_options()
+    protected function options()
     {
         $this->data = "OK";
     }
@@ -1027,14 +1190,14 @@ class RESTling extends Logger
     }
 
     /**
-     * @method void respond_text_message($message)
+     * @method void respond_text_plain($message)
      *
      * @param String $message: the message to respond to the client
      *
      * A simple helper function that generates the content-type header for plain text messages.
      * Very convinient for error messages.
      */
-    protected function respond_text_message()
+    protected function respond_text_plain()
     {
         if (empty($this->data))
         {

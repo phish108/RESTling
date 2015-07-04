@@ -11,6 +11,8 @@
 
         $prefixes = explode(PATH_SEPARATOR, get_include_path());
 
+        array_push($prefixes, "..");
+
         foreach ( $prefixes as $p ) {
            if ( file_exists( $p . "/" . $path ) ) {
                include_once $p . "/" . $path;

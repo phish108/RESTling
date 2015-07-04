@@ -17,6 +17,7 @@ class RESTlingValidator extends Logger
     {
         // return authentication required by default
         $this->service->authentication_required();
+        return "";
     }
 }
 ?>

@@ -10,40 +10,11 @@
 
 include('../contrib/Restling.auto.php');
 
-class ComplexAPIExample extends RESTling
+class ComplexAPIExample
+      extends RESTling
 {
-    private $apimode = 'default';
-
-    protected function validateURI()
-    {
-        parent::validateURI(); // this makes the path_info and the operands property available.
-
-        // the API is defined via the path_info operands.
-        $api = $this->operands;
-
-        if (count($api) == 1 && !empty($api[0]))
-        {
-            // if there is exactly 1 path_info level, then we use that for determing the 'service mode'.
-            $this->apimode = $api[0];
-        }
-        else if (count($api) != 0) {
-            // this example allows only one level of the path_info depth.
-            $this->status = RESTling::BAD_URI;
-        }
-    }
-
-    protected function prepareOperation()
-    {
-        // combine the method and the apimode to determine which operation to run
-        $this->operation = strtolower($this->method) . '_' . strtolower($this->apimode);
-
-        // after this call the "operation" property contains the name of the operation to run.
-    }
-
-    // Operation definitions below
-
     // this operation is called when no path parameters are available
-    protected function get_default()
+    protected function get()
     {
         $this->data = 'get default ok';
     }
