@@ -391,7 +391,7 @@ class RESTling extends Logger
         }
 
         // ensure that the client actually receives all data.
-        if (!empty($this->data))
+        if (isset($this->data))
         {
             // $this->mark('default ' . $this->data);
             $this->respond();
@@ -602,7 +602,7 @@ class RESTling extends Logger
      */
     protected function initializeRun()
     {
-    	$this->log("enter intializeRun in RESTling");
+    	// $this->log("enter intializeRun in RESTling");
     }
 
     /**
@@ -624,7 +624,8 @@ class RESTling extends Logger
             $this->input = $data;
 
             if (strlen($data)) {
-                $ct = explode(";", $_SERVER['CONTENT_TYPE'])[0];
+                $ct = explode(";", $_SERVER['CONTENT_TYPE']);
+                $ct = $ct[0];
 
                 switch ($ct) {
                     case 'application/json':
@@ -858,9 +859,12 @@ class RESTling extends Logger
      */
     protected function responseCode()
     {
-        if (!isset($this->streaming) && $this->streaming &&
-            empty($this->data) &&
-            ($this->response_code === 200 || empty($this->response_code)) )
+        if ( ($this->response_code === 200 || empty($this->response_code)) &&
+            ($this->streaming || (!isset($this->streaming) &&
+            (!isset($this->data) ||
+             (!(is_array($this->data) || is_object($this->data)) &&
+              empty($this->data))
+             ))) )
         {
             // the status is OK but no data is set by the service, so we respond 204
             // but only if the service did not request to stream data. In this case the
@@ -1046,7 +1050,7 @@ class RESTling extends Logger
             $this->data = $data;
         }
 
-        if (!empty($this->data))
+        if (isset($this->data))
         {
             if ( $this->status == RESTling::OK &&
                 ($this->response_code == 200 || empty($this->response_code)) )
@@ -1124,17 +1128,22 @@ class RESTling extends Logger
     {
         $this->log('respond JSON data');
 
-        if ( !empty($this->data))
+        if (isset($this->data))
         {
             if (is_array($this->data) || is_object($this->data))
             {
                 $this->log('json encode data');
                 echo(json_encode($this->data));
             }
-            else
+            else if (!empty($this->data))
             {
                 $this->log('just echo data');
                 echo($this->data);
+            }
+            else
+            {
+                $this->log('no content');
+                $this->no_content();
             }
         }
         else
