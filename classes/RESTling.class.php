@@ -1126,29 +1126,23 @@ class RESTling extends Logger
      */
     protected function respond_json_data()
     {
-        $this->log('respond JSON data');
-
         if (isset($this->data))
         {
             if (is_array($this->data) || is_object($this->data))
             {
-                $this->log('json encode data');
                 echo(json_encode($this->data));
             }
             else if (!empty($this->data))
             {
-                $this->log('just echo data');
                 echo($this->data);
             }
             else
             {
-                $this->log('no content');
                 $this->no_content();
             }
         }
         else
         {
-            $this->log('no content');
             $this->no_content();
         }
     }
