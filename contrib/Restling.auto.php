@@ -14,11 +14,7 @@
         array_push($prefixes, "..");
 
         foreach ( $prefixes as $p ) {
-           if ( file_exists( $p . "/" . $path ) ) {
-               include_once $p . "/" . $path;
-               break;
-           }
-           else if (file_exists($p . "/RESTling/" . $path)) {
+           if (file_exists($p . "/RESTling/" . $path)) {
                include_once $p . "/RESTling/" . $path;
                break;
            }
