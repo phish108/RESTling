@@ -294,17 +294,18 @@ class RESTling extends Logger
      * The  power horse of the service. This function decides which handler methods should be
      * called for the different HTTP request methods.
      *
-     * The run process has 5 phases
+     * The run process has 6 phases
      *
      * 0. internal run initialization (including loading of external configuration files)
-     * 1. Header validation
-     * 4. Operation preparation
-     * 5. Operation verification
-     * 6. Operation handling
-     * 7. Response generation
+     * 1. Operation preparation
+     * 2. Operation verification
+     * 3. Header validation
+     * 4. Input Validation
+     * 5. Operation handling
+     * 6. Response generation
      *
-     * Phase 1-6 are sequential based on the success of the previous operation.
-     * Phase 7 is always executed and has 3 sub-steps
+     * Phase 1-5 are sequential based on the success of the previous operation.
+     * Phase 6 is always executed and has 3 sub-steps
      *
      * 1. HTTP Response Code generation
      * 2. HTTP Header generation
@@ -318,17 +319,18 @@ class RESTling extends Logger
      * for initialization errors when a class is not loaded or a global property is not
      * initialized.
      *
-     * The header validation analyzes the request headers. This phase is typically responsible
-     * for session management.
-     *
-     * The URI validation checks if the service is called for an accepted URI. This also takes
+     * The operation preparation checks if the service is called for an accepted URI. This also takes
      * over the path_info extraction, so you can switch your service into different modes.
+     * The operation preparation identifies the method names for running a specific operation.
      *
-     * The method validation phase tests if the method should be accepted for the request
+     * The operation verification phase tests if the method should be accepted for the request
      * URI. This phase decides which handler function should be called. The method validation
      * is typically responsible for detecting protocol level errors.
      *
-     * The operation preparation identifies the method names for running a specific operation.
+     * The header validation analyzes the request headers. This phase is typically responsible
+     * for session management. During this phase are all registered header validators run.
+     *
+     * The input validation phase allows one to check the correctness of the incoming data.
      *
      * The operation handling calls the handler function for the request method that has been
      * determinated during the method validation phase.
