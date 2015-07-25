@@ -649,7 +649,7 @@ class RESTling extends Logger
                     case 'text/plain':
                     case 'text/html':
                         $this->inputData = $this->input;
-                        break
+                        break;
                     case 'application/x-www-form-urlencoded':
                         // all form data is stored in $_POST
                         if (empty($_POST)) {
