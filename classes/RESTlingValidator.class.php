@@ -69,7 +69,7 @@ class RESTlingValidator extends Logger
     public function run()
     {
         if (isset($this->oMethods) &&
-            array_key_exists($this->method, $this->oMethod) &&
+            array_key_exists($this->method, $this->oMethods) &&
             !$this->oMethods[$this->method])
         {
             return true;
