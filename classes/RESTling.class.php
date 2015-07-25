@@ -460,17 +460,6 @@ class RESTling extends Logger
 
         if ($this->status == RESTling::OK)
         {
-            $this->validateHeader();
-        }
-
-        if ($this->status === RESTling::OK &&
-            ($this->method === "PUT" || $this->method === "POST") )
-        {
-            $this->loadData();
-        }
-
-        if ($this->status == RESTling::OK)
-        {
             // code level verification of the API method
             // this function normally sets $this->operation.
             $this->prepareOperation();
@@ -480,8 +469,28 @@ class RESTling extends Logger
             {
                 $this->operation = 'options';
             }
+            else if ($this->status == RESTling::OK)
+            {
+                // verify that the operation exists
+                $this->checkOperation();
 
-            $this->checkOperation();
+                // ensure protocol level header validation, e.g., for access authorization
+                if ($this->status == RESTling::OK)
+                {
+                    $this->validateHeader();
+                }
+            }
+        }
+
+        if ($this->status === RESTling::OK &&
+            ($this->method === "PUT" || $this->method === "POST") )
+        {
+            $this->loadData();
+        }
+
+        if ($this->status === RESTling::OK)
+        {
+            $this->validateData();
         }
 
         // after this point the business logic needs to define error messages
@@ -796,6 +805,20 @@ class RESTling extends Logger
     {}
 
     /**
+     * @method void validateData()
+     *
+     * This is the last step before the actual operation is called.
+     *
+     * The method checks if the data is valid for the given operation.
+     * By default this method confirms all incoming data. For complex applications
+     * the data validation should get checked here, instead of testing during the operation.
+     *
+     * If the operation fails it must set the RESTling::BAD_DATA status.
+     */
+    protected function validateData()
+    {}
+
+    /**
      * private @method void checkOperation()
      *
      * Convinience function so we can implement mode complex protocol level validation.
@@ -830,7 +853,8 @@ class RESTling extends Logger
         if (!empty($this->headerValidators))
         {
             foreach ($this->headerValidators as $validator) {
-                if (!$validator->validate()) {
+                $validator->setMethod($this->operation);
+                if (!$validator->run()) {
                     $this->status = RESTling::BAD_HEADER;
                     $this->data = $validator->error();
                     break;
