@@ -128,6 +128,7 @@ class RESTling extends Logger
 
     protected $input;         ///< raw input data
     protected $inputData;     ///< processed input data if input was structured information
+    protected $inputDataType; ///< MIME type of the processed input dats
 
     protected $query;         ///< raw query paramter string, use this value if you expect a single string.
     protected $queryParam;    ///< processed query paramter object (note that this can handle multiple parameters)
@@ -632,14 +633,21 @@ class RESTling extends Logger
         {
             $this->input = $data;
 
-            if (strlen($data)) {
+            if (strlen($data))
+            {
                 $ct = explode(";", $_SERVER['CONTENT_TYPE']);
                 $ct = $ct[0];
 
-                switch ($ct) {
+                $this->inputDataType = $ct;
+                switch ($ct)
+                {
                     case 'application/json':
                         $this->inputData = json_decode($this->input, true);
                         break;
+                    case 'text/plain':
+                    case 'text/html':
+                        $this->inputData = $this->input;
+                        break
                     case 'application/x-www-form-urlencoded':
                         // all form data is stored in $_POST
                         if (empty($_POST)) {
