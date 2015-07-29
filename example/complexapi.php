@@ -40,7 +40,7 @@ class ComplexAPIExample
     // PUT /sample
     protected function put_sample()
     {
-        $this->data = 'put sample ok';
+        $this->data = 'put sample ok ' . $this->input;
     }
 }
 
