@@ -13,7 +13,6 @@
 
         array_push($prefixes, "..");
         foreach ( $prefixes as $p ) {
-            error_log($p . "/RESTling/" . $path);
             if (file_exists($p . "/RESTling/" . $path)) {
                 include_once $p . "/RESTling/" . $path;
                 break;
