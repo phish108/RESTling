@@ -3,11 +3,11 @@
 /**
  * @class Logger
  *
- * The Logger class provides some logging functions that should simplify the typical debugging tasks. 
+ * The Logger class provides some logging functions that should simplify the typical debugging tasks.
  */
 class Logger
 {
-    private $debugMode = true; ///< internal variable for activating or deactivating log messages. 
+    private $debugMode = true; ///< internal variable for activating or deactivating log messages.
 
     /**
      * setDebugMode($mode)
@@ -48,9 +48,9 @@ class Logger
             $c = array_shift($t);
         }
 
-        if (!empty($c['class']))
+        if (get_class($this))
         {
-            error_log($c['class'] . "::".  $c['function'] . " FATAL ERROR: " . $message);
+            error_log( get_class($this) . "::".  $c['function'] . " FATAL ERROR: " . $message);
         }
         else
         {
@@ -63,10 +63,10 @@ class Logger
      *
      * @param string $message takes the logging message.
      *
-     * This helper method eases the debugging of a class by generating log entries in the server's error logs. 
+     * This helper method eases the debugging of a class by generating log entries in the server's error logs.
      * It expands the message with the current class name and method name, so it can be easily identified.
-     * 
-     * This method only generates log entries if debugging is activated. 
+     *
+     * This method only generates log entries if debugging is activated.
      */
     public function log($message)
     {
@@ -76,16 +76,16 @@ class Logger
             // need to shift twice
             array_shift($t); // ignore self
             $c = array_shift($t);
-    
+
             // because mark() uses this function
             if (__CLASS__ === $c['class'])
             {
                 $c = array_shift($t);
             }
-       
-            if (!empty($c['class']))
+
+            if (get_class($this))
             {
-                error_log($c['class'] . "::".  $c['function'] . " " . $message);
+                error_log(get_class($this) . "::".  $c['function'] . " " . $message);
             }
             else
             {
@@ -131,7 +131,7 @@ class Logger
      * @param bool $bTest test this boolean
      * @param string $message the log message
      *
-     * This helper function logs only of the $bTest parameter is TRUE. This function is very useful if 
+     * This helper function logs only of the $bTest parameter is TRUE. This function is very useful if
      * the log messages should appear only under certain conditions (e.g., if a variable is out of range).
      */
     public function logtest($bTest, $message)

@@ -147,7 +147,7 @@ class RESTling extends Logger
 
     public function __construct()
     {
-        $this->mark( "********** NEW SERVICE REQUEST ***********");
+        $this->mark( "********** NEW SERVICE REQUEST (" . get_class($this) . ") ***********");
         $this->corsHosts = array();
         $this->headerValidators = array();
 
@@ -207,7 +207,7 @@ class RESTling extends Logger
      */
     public function __destruct()
     {
-        $this->mark( "********** END SERVICE REQUEST ************");
+        $this->mark( "********** END SERVICE REQUEST (" . get_class($this) . ")************");
     }
 
     /**
