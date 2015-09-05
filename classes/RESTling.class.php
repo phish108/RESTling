@@ -168,7 +168,19 @@ class RESTling extends Logger
         foreach( $query as $param )
         {
             list($name, $value) = explode('=', $param);
-            $this->queryParam[urldecode($name)][] = urldecode($value);
+            $pn = urldecode($name);
+            if (array_key_exists($pn, $this->queryParam))
+            {
+                if (gettype($this->queryParam[$pn]) != "array")
+                {
+                    $this->queryParam[$pn] = array($this->queryParam[$pn]);
+                }
+                $this->queryParam[$pn][] = urldecode($value);
+            }
+            else
+            {
+                $this->queryParam[$pn] = urldecode($value);
+            }
         }
 
         // pull up the path info
