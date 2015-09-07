@@ -142,6 +142,7 @@ class RESTling extends Logger
     protected $operation;     ///< string, function name of the operation to be called.
 
     private $headerValidators; ///< array, list of validators to be used
+    private $keepRawDataFlag = false;
 
     protected $streaming; ///< boolean value that determines whether operations should be "processed" or "streamed". Only set this property if you want to stream!
 
@@ -232,6 +233,16 @@ class RESTling extends Logger
     public function forbidCORS()
     {
         $this->withCORS = false;
+    }
+
+    public function keepRawData()
+    {
+        $this->keepRawDataFlag = true;
+    }
+
+    public function dropRawData()
+    {
+        $this->keepRawDataFlag = false;
     }
 
     /**
@@ -468,6 +479,7 @@ class RESTling extends Logger
 
     private function prepareRun()
     {
+
         if ( $this->status == RESTling::OK)
         {
             $this->initializeRun();
@@ -497,8 +509,7 @@ class RESTling extends Logger
             }
         }
 
-        if ($this->status === RESTling::OK &&
-            ($this->method === "PUT" || $this->method === "POST") )
+        if ($this->status === RESTling::OK)
         {
             $this->loadData();
         }
@@ -641,44 +652,51 @@ class RESTling extends Logger
      * overwridden.
      */
     protected function loadData() {
-        $content = file_get_contents("php://input");
-        $data = $content;
-        if (isset($data))
+        if (($this->method === "PUT" ||
+             $this->method === "POST") &&
+            !isset($this->inputData))
         {
-            $this->input = $data;
-
-            if (strlen($data))
+            $data = file_get_contents("php://input");
+            if (isset($data))
             {
-                $ct = explode(";", $_SERVER['CONTENT_TYPE']);
-                $ct = $ct[0];
-
-                $this->inputDataType = $ct;
-                switch ($ct)
+                if ($this->keepRawDataFlag)
                 {
-                    case 'application/json':
-                        $this->inputData = json_decode($this->input, true);
-                        break;
-                    case 'text/plain':
-                    case 'text/html':
-                        $this->inputData = $this->input;
-                        break;
-                    case 'application/x-www-form-urlencoded':
-                        // all form data is stored in $_POST
-                        if (empty($_POST)) {
-                            // populate POST
-                            $_POST = array();
-                            parse_str($this->input, $_POST);
-                        }
-                        $this->inputData = $_POST;
-                        break;
-                    default;
-                        break;
+                    $this->input = $data;
+                }
+
+                if (strlen($data))
+                {
+                    $ct = explode(";", $_SERVER['CONTENT_TYPE']);
+                    $ct = $ct[0];
+
+                    $this->inputDataType = $ct;
+                    switch ($ct)
+                    {
+                        case 'application/json':
+                            $this->inputData = json_decode($this->input, true);
+                            break;
+                        case 'text/plain':
+                        case 'text/html':
+                            $this->inputData = $this->input;
+                            break;
+                        case 'application/x-www-form-urlencoded':
+                            // all form data is stored in $_POST
+                            if (empty($_POST)) {
+                                // populate POST
+                                $_POST = array();
+                                parse_str($this->input, $_POST);
+                            }
+                            $this->inputData = $_POST;
+                            break;
+                        default;
+                            break;
+                    }
                 }
             }
-        }
-        else
-        {
-            $this->status = RESTling::BAD_DATA;
+            else
+            {
+                $this->status = RESTling::BAD_DATA;
+            }
         }
     }
 
