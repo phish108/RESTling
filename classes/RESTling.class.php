@@ -198,6 +198,9 @@ class RESTling extends Logger
 
         if (!empty($path_info))
         {
+            // strip any potential querystring that is left in the url
+            $path_info = preg_replace('/\?.*$/',  '', $path_info);
+
             // remove any leading or trailing slashes
             $path_info = preg_replace('/^\/*|\/*$/', '', $path_info);
             // condense multiple slashes to one
