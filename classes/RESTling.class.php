@@ -676,18 +676,18 @@ class RESTling extends Logger
                     switch ($ct)
                     {
                         case 'application/json':
-                            $this->inputData = json_decode($this->input, true);
+                            $this->inputData = json_decode($data, true);
                             break;
                         case 'text/plain':
                         case 'text/html':
-                            $this->inputData = $this->input;
+                            $this->inputData = $data;
                             break;
                         case 'application/x-www-form-urlencoded':
                             // all form data is stored in $_POST
                             if (empty($_POST)) {
                                 // populate POST
                                 $_POST = array();
-                                parse_str($this->input, $_POST);
+                                parse_str($data, $_POST);
                             }
                             $this->inputData = $_POST;
                             break;
