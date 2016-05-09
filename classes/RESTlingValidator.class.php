@@ -40,11 +40,15 @@ class RESTlingValidator extends Logger
         {
             $this->oMethods = array();
         }
+
         if (isset($methodObject) && !empty($methodObject))
         {
-            foreach($methodObject as $key => $value)
+            foreach($methodObject as $value)
             {
-                $this->oMethods[$key] = $value;
+                if (!in_array($value, $this->oMethod))
+                {
+                    $this->oMethods[] = $value;
+                }
             }
         }
     }
@@ -96,8 +100,7 @@ class RESTlingValidator extends Logger
         $this->state = 1;
 
         if (isset($this->oMethods) &&
-            array_key_exists($this->method, $this->oMethods) &&
-            !$this->oMethods[$this->method])
+            in_array($this->method, $this->oMethods))
         {
             return true;
         }
