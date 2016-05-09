@@ -141,7 +141,8 @@ class RESTling extends Logger
 
     protected $operation;     ///< string, function name of the operation to be called.
 
-    private $headerValidators; ///< array, list of validators to be used
+    private $headerValidators; ///< array, list of validators to be used for incoming headers
+    private $dataValidators; ///< array, list of validators to be used for incoming data
     private $keepRawDataFlag = false;
 
     protected $streaming; ///< boolean value that determines whether operations should be "processed" or "streamed". Only set this property if you want to stream!
@@ -151,6 +152,7 @@ class RESTling extends Logger
         $this->mark( "********** NEW SERVICE REQUEST (" . get_class($this) . ") ***********");
         $this->corsHosts = array();
         $this->headerValidators = array();
+        $this->dataValidators = array();
 
         $this->query = $_SERVER["QUERY_STRING"]; // normally ends in _GET, but qstring parsing in php sucks
 
@@ -517,7 +519,8 @@ class RESTling extends Logger
             $this->loadData();
         }
 
-        if ($this->status === RESTling::OK)
+        if ($this->status === RESTling::OK &&
+            in_array($this->method, array("PUT", "POST")))
         {
             $this->validateData();
         }
@@ -529,7 +532,7 @@ class RESTling extends Logger
             // the application logic level verification whether an API method
             // should be executed or not, e.g. ACL verification
 
-            $oper = $this->operation; // ensure that the operation cannot be overwriten at this point
+            $oper = $this->operation; // ensure that the operation cannot be overwritten at this point
 
             $this->validateOperation();
 
@@ -856,10 +859,41 @@ class RESTling extends Logger
      * By default this method confirms all incoming data. For complex applications
      * the data validation should get checked here, instead of testing during the operation.
      *
+     * This function uses any DataValidator
+     *
      * If the operation fails it must set the RESTling::BAD_DATA status.
      */
     protected function validateData()
-    {}
+    {
+        $anyOK = true;
+
+        // automatically accept non data methods
+
+
+            if (!empty($this->dataValidators))
+            {
+                $anyOK = false;
+                foreach ($this->dataValidators as $validator) {
+                    $validator->setMethod($this->operation);
+                    $validator->setData($this->inputData, $this->inputDataType);
+
+                    $res = $validator->run();
+
+                    if (!$res && $validator->mandatory()) {
+                        $this->status = RESTling::BAD_DATA;
+                        $this->data = $validator->error();
+                        break;
+                    }
+
+                    $anyOK = $res || $anyOK;
+                }
+
+                if (!anyOK) { // ALL NON-MANDATORY VALIDATORS FAILED
+                    $this->status = RESTling::BAD_DATA;
+                }
+            }
+
+    }
 
     /**
      * private @method void checkOperation()
@@ -877,7 +911,7 @@ class RESTling extends Logger
     }
 
     /**
-* @method void validateHeader()
+     * @method void validateHeader()
      *
      * Handles the second phase of the run process. At this level you would implement
      * Cookie validation or OAuth. The header validation just confirms the correctness of
@@ -893,26 +927,64 @@ class RESTling extends Logger
      */
     private function validateHeader()
     {
+        $anyOK = true;
         if (!empty($this->headerValidators))
         {
+            $anyOK = false;
             foreach ($this->headerValidators as $validator) {
                 $validator->setMethod($this->operation);
-                if (!$validator->run()) {
+
+                $res = $validator->run();
+
+                if (!$res && $validator->mandatory()) {
                     $this->status = RESTling::BAD_HEADER;
                     $this->data = $validator->error();
                     break;
                 }
+
+                $anyOK = $res || $anyOK;
+            }
+
+            if (!anyOK) { // ALL NON MANDATORY VALIDATORS FAILED
+                $this->status = RESTling::BAD_HEADER;
             }
         }
     }
 
-    public function addValidator($validatorObject)
+    /**
+     * addHeaderValidator($validatorObject)
+     *
+     * Adds a header Validator. These validators are run during the header validation phase.
+     */
+    public function addHeaderValidator($validatorObject)
     {
         if (isset($validatorObject))
         {
             $this->headerValidators[] = $validatorObject;
             $validatorObject->setService($this);
         }
+    }
+
+    /**
+     * addDataValidator($validatorObject)
+     *
+     * Adds a data Validator. These validators are run during the data validation phase.
+     */
+    public function addDataValidator($validatorObject)
+    {
+        if (isset($validatorObject))
+        {
+            $this->dataValidators[] = $validatorObject;
+            $validatorObject->setService($this);
+        }
+    }
+
+    protected function ignoreHeaderValidationForOperation() {
+        return array();
+    }
+
+    protected function ignoreDataValidationForOperation() {
+        return array();
     }
 
     /**
