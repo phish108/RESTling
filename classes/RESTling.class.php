@@ -945,7 +945,7 @@ class RESTling extends Logger
                 $anyOK = $res || $anyOK;
             }
 
-            if (!anyOK) { // ALL NON MANDATORY VALIDATORS FAILED
+            if (!$anyOK) { // ALL NON MANDATORY VALIDATORS FAILED
                 $this->status = RESTling::BAD_HEADER;
             }
         }
