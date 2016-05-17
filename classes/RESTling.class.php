@@ -662,9 +662,12 @@ class RESTling extends Logger
              $this->method === "POST") &&
             !isset($this->inputData))
         {
+            // ensure that there is always some inputData for POST and PUT requests
+            $this->inputData = array();
             $data = file_get_contents("php://input");
             if (isset($data))
             {
+
                 if ($this->keepRawDataFlag)
                 {
                     $this->input = $data;
