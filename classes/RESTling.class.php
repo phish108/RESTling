@@ -669,12 +669,10 @@ class RESTling extends Logger
                 {
                     $this->input = $data;
                 }
-
                 if (strlen($data))
                 {
                     $ct = explode(";", $_SERVER['CONTENT_TYPE']);
                     $ct = $ct[0];
-
                     $this->inputDataType = $ct;
                     switch ($ct)
                     {
@@ -697,6 +695,11 @@ class RESTling extends Logger
                         default;
                             break;
                     }
+                }
+                else if (!empty($_POST)) {
+                    // we endup here in multipart formdata
+                    $this->inputDataType = "multipart/form-data";
+                    $this->inputData = $_POST;
                 }
             }
             else
@@ -869,30 +872,28 @@ class RESTling extends Logger
 
         // automatically accept non data methods
 
+        if (!empty($this->dataValidators))
+        {
+            $anyOK = false;
+            foreach ($this->dataValidators as $validator) {
+                $validator->setMethod($this->operation);
+                $validator->setData($this->inputData, $this->inputDataType);
 
-            if (!empty($this->dataValidators))
-            {
-                $anyOK = false;
-                foreach ($this->dataValidators as $validator) {
-                    $validator->setMethod($this->operation);
-                    $validator->setData($this->inputData, $this->inputDataType);
+                $res = $validator->run();
 
-                    $res = $validator->run();
-
-                    if (!$res && $validator->mandatory()) {
-                        $this->status = RESTling::BAD_DATA;
-                        $this->data = $validator->error();
-                        break;
-                    }
-
-                    $anyOK = $res || $anyOK;
-                }
-
-                if (!$anyOK) { // ALL NON-MANDATORY VALIDATORS FAILED
+                if (!$res && $validator->mandatory()) {
                     $this->status = RESTling::BAD_DATA;
+                    $this->data = $validator->error();
+                    break;
                 }
+
+                $anyOK = $res || $anyOK;
             }
 
+            if (!$anyOK) { // ALL NON-MANDATORY VALIDATORS FAILED
+                $this->status = RESTling::BAD_DATA;
+            }
+        }
     }
 
     /**
