@@ -1156,7 +1156,7 @@ class RESTling extends Logger
                 $rv = 'application/json';
                 break;
             case 'form':
-                $rv = 'content-type: application/x-www-form-urlencoded';
+                $rv = 'application/x-www-form-urlencoded';
                 break;
             case 'text':
                 break;
