@@ -1,5 +1,7 @@
 <?php
 
+namespace RESTling;
+
 /**
  * @class: RESTling
  *

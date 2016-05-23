@@ -11,7 +11,7 @@
 include('../contrib/Restling.auto.php');
 
 class StreamingAPIExample
-      extends RESTling
+      extends \RESTling\RESTling
 {
     // This property is used for passing on the stream.
     private $mystream;

@@ -1,4 +1,6 @@
 <?php
+namespace RESTling;
+
 class RESTlingValidator extends Logger
 {
     protected $service;  ///< internal handler for the service class.

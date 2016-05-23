@@ -11,7 +11,7 @@
 include('../contrib/Restling.auto.php');
 
 class ComplexAPIExample
-      extends RESTling
+      extends \RESTling\RESTling
 {
     // this operation is called when no path parameters are available
     protected function get()

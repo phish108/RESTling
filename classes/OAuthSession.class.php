@@ -1,4 +1,5 @@
 <?php
+namespace RESTling;
 
 /**
  * OAuthSession is responsible for all OAuth management and verification tasks.
