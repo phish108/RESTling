@@ -14,7 +14,7 @@ namespace RESTling;
  *
  * if also contains a small function of invalidating access keys
  */
-class OAuthSession extends RESTlingValidator
+class OAuthSession extends Validator
 {
     const TIMEOUT_DELTA = 86400;
 

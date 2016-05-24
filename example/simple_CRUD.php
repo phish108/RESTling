@@ -5,7 +5,7 @@
 include('../contrib/Restling.auto.php');
 
 class RestlingTest
-      extends \RESTling\RESTling
+      extends \RESTling\Service
 {
     protected function get()
     {

@@ -3,7 +3,7 @@
 namespace RESTling;
 
 /**
- * @class: RESTling
+ * @class: RESTling\Service
  *
  * This is a basic service class for RESTful services that provides the basic
  * logic for many RESTful Web-services.
@@ -38,7 +38,7 @@ namespace RESTling;
  * Instead, all business logic will be implemented in the related phases, which typically boils down to implementing the
  * Request Operation Phase logic.
  *
- * ## Implementing a RESTling service.
+ * ## Implementing a RESTling Service.
  *
  * A RESTling implementation requires a service class that implements the handler functions for the service operations.
  * By default the format for service operations is
@@ -54,7 +54,7 @@ namespace RESTling;
  *     protected function handle_GET(){}
  *     protected function handle_PUT(){}
  *
- * However, RESTling provide a flexible approach for implementing complex RESTful APIs through the
+ * However, RESTling provides a flexible approach for implementing complex RESTful APIs through the
  * prepareOperation() method.
  *
  * ## Debugging RESTling
@@ -93,7 +93,7 @@ namespace RESTling;
  * Therefore, the present state of RESTling's CORS support is likely to remain rudimentary.
  *
  */
-class RESTling extends Logger
+class Service extends Logger
 {
     const OK                  = 0;
     const UNINITIALIZED       = 1;
@@ -217,7 +217,7 @@ class RESTling extends Logger
             }
         }
 
-        $this->status = RESTling::OK;
+        $this->status = Service::OK;
     }
 
     /**
@@ -407,7 +407,7 @@ class RESTling extends Logger
     {
         $this->prepareRun();
 
-        if ($this->status == RESTling::OK
+        if ($this->status == Service::OK
             && !empty($this->operation))
         {
             // now call the operation
@@ -487,12 +487,12 @@ class RESTling extends Logger
     private function prepareRun()
     {
 
-        if ( $this->status == RESTling::OK)
+        if ( $this->status == Service::OK)
         {
             $this->initializeRun();
         }
 
-        if ($this->status == RESTling::OK)
+        if ($this->status == Service::OK)
         {
             // code level verification of the API method
             // this function normally sets $this->operation.
@@ -503,25 +503,25 @@ class RESTling extends Logger
             {
                 $this->operation = 'options';
             }
-            else if ($this->status == RESTling::OK)
+            else if ($this->status == Service::OK)
             {
                 // verify that the operation exists
                 $this->checkOperation();
 
                 // ensure protocol level header validation, e.g., for access authorization
-                if ($this->status == RESTling::OK)
+                if ($this->status == Service::OK)
                 {
                     $this->validateHeader();
                 }
             }
         }
 
-        if ($this->status === RESTling::OK)
+        if ($this->status === Service::OK)
         {
             $this->loadData();
         }
 
-        if ($this->status === RESTling::OK &&
+        if ($this->status === Service::OK &&
             in_array($this->method, array("PUT", "POST")))
         {
             $this->validateData();
@@ -529,7 +529,7 @@ class RESTling extends Logger
 
         // after this point the business logic needs to define error messages
 
-        if ($this->status == RESTling::OK)
+        if ($this->status == Service::OK)
         {
             // the application logic level verification whether an API method
             // should be executed or not, e.g. ACL verification
@@ -544,7 +544,7 @@ class RESTling extends Logger
 
     protected function handleStatus()
     {
-        if ($this->status != RESTling::OK
+        if ($this->status != Service::OK
             && empty($this->response_code))
         {
             /**
@@ -558,7 +558,7 @@ class RESTling extends Logger
 
             switch($this->status)
             {
-            case RESTling::UNINITIALIZED:
+            case Service::UNINITIALIZED:
                 /**
                  * If the service or the request cannot be initialized, RESTling will automatically respond
                  * the 503 Unavailable response to indicate that the service is currently not available.
@@ -566,7 +566,7 @@ class RESTling extends Logger
                 $this->log('setup error!');
                 $this->unavailable();
                 break;
-            case RESTling::BAD_URI:
+            case Service::BAD_URI:
                 /**
                  * If at any stage the service identifies a bad URI it will always respond 404 Not Found.
                  * This indicates that the requested URL is not available on the server.
@@ -574,7 +574,7 @@ class RESTling extends Logger
                 $this->log('malformed URI detected!');
                 $this->not_found();
                 break;
-            case RESTling::BAD_DATA:
+            case Service::BAD_DATA:
                 /**
                  * If the data object sent in PUT or POST requests is malformed, then RESTling will send
                  * a 400 Bad Request error to the client.
@@ -582,7 +582,7 @@ class RESTling extends Logger
                 $this->log('malformed data detected!');
                 $this->bad_request();
                 break;
-            case RESTling::BAD_HEADER:
+            case Service::BAD_HEADER:
                 /**
                  * If the request headers cannot be validated, then RESTling will send
                  * a 412 Precondition Failed response to the client.
@@ -590,7 +590,7 @@ class RESTling extends Logger
                 $this->log('malformed header detected!');
                 $this->precondition_failed();
                 break;
-            case RESTling::BAD_METHOD:
+            case Service::BAD_METHOD:
                 /**
                  * If the request method cannot be validated, then RESTling will send
                  * a 405 Method Not Allowed response to the client.
@@ -600,7 +600,7 @@ class RESTling extends Logger
                 $this->log('wrong request method detected!');
                 $this->not_allowed();
                 break;
-            case RESTling::BAD_OPERATION:
+            case Service::BAD_OPERATION:
                 /**
                  * If the request tries to access an operation that is not implemented by the service,
                  * RESTling will automatically generate a 400 Bad Request response.
@@ -608,7 +608,7 @@ class RESTling extends Logger
                 $this->log("not allowed by RESTling");
                 $this->bad_request();
                 break;
-            case RESTling::OPERATION_FORBIDDEN:
+            case Service::OPERATION_FORBIDDEN:
                 /**
                  * If the application logic forbids the access to the requested operation, RESTling will
                  * automatically generate a 403 Forbidden response. This behaviour can be changed for example
@@ -620,12 +620,12 @@ class RESTling extends Logger
                     $this->forbidden();
                 }
                 break;
-            case RESTling::OPERATION_FAILED;
+            case Service::OPERATION_FAILED;
                 $this->log('operation failed');
                 // the operation must set the return code.
                 break;
             default:
-                // case RESTling::OK
+                // case Service::OK
                 break;
             }
         }
@@ -639,7 +639,7 @@ class RESTling extends Logger
      * parameters of the process
      *
      * If the internal initialization fails, this function must set the service status to
-     * RESTling::UNINITIALIZED.
+     * Service::UNINITIALIZED.
      *
      * If the service cannot be initialized, all other steps will be avoided.
      */
@@ -654,7 +654,7 @@ class RESTling extends Logger
      * This method is triggered when the service catches a PUT or POST request in order to
      * load structured (non url-encoded) data into the business logic. By default this method
      * expects a JSON string as input. If the data fails to parse as JSON this method sets
-     * the status property to RESTling::BAD_DATA.
+     * the status property to Service::BAD_DATA.
      *
      * In case a service expects different data formats of input this method has to be
      * overwridden.
@@ -709,7 +709,7 @@ class RESTling extends Logger
             }
             else
             {
-                $this->status = RESTling::BAD_DATA;
+                $this->status = Service::BAD_DATA;
             }
         }
     }
@@ -720,7 +720,7 @@ class RESTling extends Logger
       * This method builds the method name or the service handler and test the
       * logical presence of this handler. If the service class does not implement
       * a method handler for the requested operation this method sets the status property
-      * to RESTling::BAD_OPERATION.
+      * to Service::BAD_OPERATION.
       *
       * prepareOperation() automatically checks for REST protocol functions in
       * the format METHOD + "_" + PATH_INFO. All protocol functions are
@@ -812,31 +812,31 @@ class RESTling extends Logger
     {
         $p = array();
         $c = $pathinfo;
-        $this->status = RESTling::BAD_OPERATION;
+        $this->status = Service::BAD_OPERATION;
 
         while (!empty($c) &&
-               $this->status == RESTling::BAD_OPERATION)
+               $this->status == Service::BAD_OPERATION)
         {
             $op = $method . "_" . implode("_", $c);
 
             if (!method_exists($this, $op))
             {
-                $this->status = RESTling::BAD_OPERATION;
+                $this->status = Service::BAD_OPERATION;
                 array_unshift($p, array_pop($c));
             }
             else
             {
-                $this->status = RESTling::OK;
+                $this->status = Service::OK;
                 $this->path_info = $p;
                 return $op;
             }
         }
 
         // test if there is a plain HTTP verb function
-        if ($this->status == RESTling::BAD_OPERATION &&
+        if ($this->status == Service::BAD_OPERATION &&
             method_exists($this, $method))
         {
-            $this->status = RESTling::OK;
+            $this->status = Service::OK;
             $this->path_info = $p;
         }
         return $method;
@@ -853,7 +853,7 @@ class RESTling extends Logger
      * implement this method.
      *
      * If the operation is forbidden in the context of the given request, then this method
-     * must set the status RESTling::OPERATION_FORBIDDEN.
+     * must set the status Service::OPERATION_FORBIDDEN.
      */
     protected function validateOperation()
     {}
@@ -869,7 +869,7 @@ class RESTling extends Logger
      *
      * This function uses any DataValidator
      *
-     * If the operation fails it must set the RESTling::BAD_DATA status.
+     * If the operation fails it must set the Service::BAD_DATA status.
      */
     protected function validateData()
     {
@@ -887,7 +887,7 @@ class RESTling extends Logger
                 $res = $validator->run();
 
                 if (!$res && $validator->mandatory()) {
-                    $this->status = RESTling::BAD_DATA;
+                    $this->status = Service::BAD_DATA;
                     $this->data = $validator->error();
                     break;
                 }
@@ -896,7 +896,7 @@ class RESTling extends Logger
             }
 
             if (!$anyOK) { // ALL NON-MANDATORY VALIDATORS FAILED
-                $this->status = RESTling::BAD_DATA;
+                $this->status = Service::BAD_DATA;
             }
         }
     }
@@ -912,7 +912,7 @@ class RESTling extends Logger
     {
         if (empty($this->operation) || !method_exists($this, $this->operation))
         {
-            $this->status = RESTling::BAD_OPERATION;
+            $this->status = Service::BAD_OPERATION;
         }
     }
 
@@ -943,7 +943,7 @@ class RESTling extends Logger
                 $res = $validator->run();
 
                 if (!$res && $validator->mandatory()) {
-                    $this->status = RESTling::BAD_HEADER;
+                    $this->status = Service::BAD_HEADER;
                     $this->data = $validator->error();
                     break;
                 }
@@ -952,7 +952,7 @@ class RESTling extends Logger
             }
 
             if (!$anyOK) { // ALL NON MANDATORY VALIDATORS FAILED
-                $this->status = RESTling::BAD_HEADER;
+                $this->status = Service::BAD_HEADER;
             }
         }
     }
@@ -1197,7 +1197,7 @@ class RESTling extends Logger
 
         if (isset($this->data))
         {
-            if ( $this->status == RESTling::OK &&
+            if ( $this->status == Service::OK &&
                 ($this->response_code == 200 || empty($this->response_code)) )
             {
                 $outputfunction = 'text_plain';
@@ -1416,7 +1416,7 @@ class RESTling extends Logger
      * @param misc $message (optional) extra message to be send to the client
      *
      * Sends the 503 error message to the client. This method is typically triggered in the
-     * service fails with a RESTling::UNINITIALIZED status.
+     * service fails with a Service::UNINITIALIZED status.
      */
     public function unavailable($message="")
     {
@@ -1516,7 +1516,7 @@ class RESTling extends Logger
      * This function should be used in case of errors during validateHeader().
      *
      * Typically this function is automatically called if the service $status is set to
-     * RESTling::BAD_HEADER.
+     * Service::BAD_HEADER.
      */
     public function precondition_failed($message="")
     {

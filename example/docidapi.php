@@ -17,7 +17,7 @@
 include('../contrib/Restling.auto.php');
 
 class DocIDAPIExample
-      extends \RESTling\RESTling
+      extends \RESTling\Service
 {
     /**
      * findOperation() helps to determin the correct operation handler.
@@ -66,13 +66,13 @@ class DocIDAPIExample
                 if ($op[0] == 'put' && // put must have a sample id (in this case)
                     !empty($this->path_info[1]))
                 {
-                    $this->status = \RESTling\RESTling::OPERATION_FORBIDDEN;
+                    $this->status = \RESTling\Service::OPERATION_FORBIDDEN;
                     $op[0] = 'get'; // the example ID needs to be valid
                 }
                 else if ($this->path_info[1] < 0 || $this->path_info[1] >= 10)
                 {
                     $this->log("sample id forbidden");
-                    $this->status = \RESTling\RESTling::OPERATION_FORBIDDEN;
+                    $this->status = \RESTling\Service::OPERATION_FORBIDDEN;
                     $op[0] = 'get'; // the example ID needs to be valid
                 }
 
@@ -84,7 +84,7 @@ class DocIDAPIExample
                     ($this->path_info[0] < 0 || $this->path_info[0] >= 10))
                 {
                     $this->log("example id forbidden");
-                    $this->status = \RESTling\RESTling::OPERATION_FORBIDDEN;
+                    $this->status = \RESTling\Service::OPERATION_FORBIDDEN;
                 }
                 // again no break, let the default stop the switch.
             default:
