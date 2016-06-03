@@ -907,7 +907,7 @@ class Service extends Logger
         return $retval;
     }
 
-    private function findParameterOperation($operartion) {
+    private function findParameterOperation($operation) {
         if (isset($this->operation_parameter) &&
             !empty($this->operation_parameter)) {
 
