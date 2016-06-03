@@ -142,7 +142,7 @@ class Service extends Logger
     protected $corsHosts;     ///< array, list of referer hosts that are allowed to call this service via CORS.
 
     protected $operation;     ///< string, function name of the operation to be called.
-    private   $operation_parameter ///< array, contains parameter names in input or param list.
+    private   $operation_parameter; ///< array, contains parameter names in input or param list.
 
     private $headerValidators; ///< array, list of validators to be used for incoming headers
     private $dataValidators; ///< array, list of validators to be used for incoming data
