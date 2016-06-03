@@ -142,6 +142,7 @@ class Service extends Logger
     protected $corsHosts;     ///< array, list of referer hosts that are allowed to call this service via CORS.
 
     protected $operation;     ///< string, function name of the operation to be called.
+    private   $operation_parameter ///< array, contains parameter names in input or param list.
 
     private $headerValidators; ///< array, list of validators to be used for incoming headers
     private $dataValidators; ///< array, list of validators to be used for incoming data
@@ -163,29 +164,13 @@ class Service extends Logger
 
         $this->method = $_SERVER['REQUEST_METHOD'];
 
-        // secure get string handling
+        // URL embeded query parameter handling
         $query = array();
         if (!empty($this->query))
         {
-            $query  = preg_split('/[&;]+/', $this->query); // split at & or ;. Ignore sequences of separators
-        }
-
-        foreach( $query as $param )
-        {
-            list($name, $value) = explode('=', $param);
-            $pn = urldecode($name);
-            if (array_key_exists($pn, $this->queryParam))
-            {
-                if (gettype($this->queryParam[$pn]) != "array")
-                {
-                    $this->queryParam[$pn] = array($this->queryParam[$pn]);
-                }
-                $this->queryParam[$pn][] = urldecode($value);
-            }
-            else
-            {
-                $this->queryParam[$pn] = urldecode($value);
-            }
+            $qparam = array();
+            parse_str($this->query, $qparam);
+            $this->queryParam = $qparam;
         }
 
         // pull up the path info
@@ -196,7 +181,7 @@ class Service extends Logger
         }
         else
         {
-            // newer PHP instances won't fillup the PATH_INFO from the REQUEST_URI under apache.
+            // path_info is not always filled
             $path_info = preg_replace('/^.*\.php/', '', $_SERVER["REQUEST_URI"]);
         }
 
@@ -293,6 +278,72 @@ class Service extends Logger
             {
                 $this->corsHosts[$h] = $methods;
             }
+        }
+    }
+
+    /**
+     * parameter based operations
+     *
+     * @method void setQueryParameter($param)
+     *
+     * @param mixed $param: parameter name or list of parameter names
+     *
+     * Sets a list of parameters that are used to defined an operation.
+     * Only ONE paramerer will be used for determinating the operation using
+     * the order of the provided list as significance.
+     *
+     * The resulting operationname will use the __value__ of the parameter.
+     *
+     * If the same parameter appears in the data as well as in a query string,
+     * the value of the data will be used.
+     *
+     * Example:
+     *
+     * if you call setQueryParameter using the following parameters.
+     *
+     * ```
+     *    $service->setQueryParameter(array("foo", "bar"));
+     * ```
+     *
+     * and a client send the following query string for a GET request.
+     *
+     * ```
+     * foo=hello
+     * ```
+     *
+     * RESTling will test if your most significant method has a sibling that suffixes "_hello".
+     * In the case of no path_info handling, RESTling will test for the method ```get_hello```.
+     *
+     * If a client sends the query string in a POST request
+     *
+     *  ```
+     * bar=world
+     * ```
+     *
+     * RESTling will test if your most significant method has a sibling that suffixes "_hello".
+     * In the case of no path_info handling, RESTling will test for the method ```post_world```.
+     *
+     * If a client POSTs the following query.
+     *
+     * ```
+     * bar=world&foo="hello"
+     * ```
+     *
+     * RESTling will first test if your most significant method has a sibling
+     * that suffixes "_hello" and then if it has a sibling that suffixes "_world".
+     *
+     * In the case of no path_info handling, RESTling will test for the method ```post_hello```.
+     * Only if this does not exist, then it will test for ```post_world```.
+     */
+    public function setOperationParameter($param) {
+        if (isset($param) && !empty($param)) {
+            if (!is_array($param)) {
+                $param = array($param);
+            }
+            $this->operation_parameter = $param;
+        }
+        else {
+            $this->operation_parameter = array();
         }
     }
 
@@ -405,6 +456,9 @@ class Service extends Logger
      */
     public function run()
     {
+        // first try to load any data. This might be needed for operation determination
+        $this->loadData();
+
         $this->prepareRun();
 
         if ($this->status == Service::OK
@@ -514,11 +568,6 @@ class Service extends Logger
                     $this->validateHeader();
                 }
             }
-        }
-
-        if ($this->status === Service::OK)
-        {
-            $this->loadData();
         }
 
         if ($this->status === Service::OK &&
@@ -669,11 +718,11 @@ class Service extends Logger
             $data = file_get_contents("php://input");
             if (isset($data))
             {
-
                 if ($this->keepRawDataFlag)
                 {
                     $this->input = $data;
                 }
+
                 if (strlen($data))
                 {
                     $ct = explode(";", $_SERVER['CONTENT_TYPE']);
@@ -814,22 +863,36 @@ class Service extends Logger
         $c = $pathinfo;
         $this->status = Service::BAD_OPERATION;
 
+        $retval = null;
+
         while (!empty($c) &&
                $this->status == Service::BAD_OPERATION)
         {
             $op = $method . "_" . implode("_", $c);
 
-            if (!method_exists($this, $op))
-            {
-                $this->status = Service::BAD_OPERATION;
-                array_unshift($p, array_pop($c));
+            if ($extop = $this->findParameterOperation($op)) {
+                $this->status = Service::OK;
+                $this->path_info = $p;
+                $retval = $extop;
             }
-            else
+            else if (method_exists($this, $op))
             {
                 $this->status = Service::OK;
                 $this->path_info = $p;
-                return $op;
+                $retval = $op;
             }
+            else
+            {
+                array_unshift($p, array_pop($c));
+            }
+        }
+
+        if ($this->status == Service::BAD_OPERATION &&
+            $op = $this->findParameterOperation($method)) {
+
+            $this->status = Service::OK;
+            $this->path_info = $p;
+            $retval =  $op;
         }
 
         // test if there is a plain HTTP verb function
@@ -838,8 +901,42 @@ class Service extends Logger
         {
             $this->status = Service::OK;
             $this->path_info = $p;
+            $retval = $method;
         }
-        return $method;
+
+        return $retval;
+    }
+
+    private function findParameterOperation($operartion) {
+        if (isset($this->operation_parameter) &&
+            !empty($this->operation_parameter)) {
+
+            foreach ($this->operation_parameter as $opext) {
+                $op = "";
+                // first check query params
+                if (isset($this->queryParam) &&
+                    !empty($this->queryParam) &&
+                    array_key_exists($opext, $this->queryParam)) {
+
+                    $op = $operation . "_" . $this->queryParam[$opext];
+                }
+
+                // then input params
+                if (isset($this->inputData) &&
+                    !empty($this->inputData) &&
+                    array_key_exists($opext, $this->inputData)) {
+
+                    $op = $operation . "_" . $this->inputData[$opext];
+                }
+
+                if (!empty($op) &&
+                    method_exists($this, $op))
+                {
+                    return $op;
+                }
+            }
+        }
+        return null;
     }
 
     /**
