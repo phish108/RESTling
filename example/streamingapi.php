@@ -25,7 +25,7 @@ class StreamingAPIExample
     // GET /example < sends a plain text data stream
     protected function get_example()
     {
-        $this->streaming = true;
+        $this->streamData();
         // prepare the stream
         $this->response_type = "text";
         $this->mystream = array("Example ", "Stream ", "Is ", "OK");
@@ -34,7 +34,7 @@ class StreamingAPIExample
     // GET /sample < sends a JSON data stream
     protected function get_sample()
     {
-        $this->streaming = true;
+        $this->streamData();
         $this->response_type = "json";
         $this->mystream = array(array("chunk" =>"Sample"),
                                 array("chunk" => "JSON"),

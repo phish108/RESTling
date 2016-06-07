@@ -237,6 +237,11 @@ class Service extends Logger
         $this->keepRawDataFlag = false;
     }
 
+    final public function streamData()
+    {
+        $this->streaming = true;
+    }
+
     /**
      * @method void addCORSHost($host, $methods)
      *
