@@ -217,22 +217,22 @@ class Service extends Logger
 
     /**
      */
-    public function allowCORS()
+    final public function allowCORS()
     {
         $this->withCORS = true;
     }
 
-    public function forbidCORS()
+    final public function forbidCORS()
     {
         $this->withCORS = false;
     }
 
-    public function keepRawData()
+    final public function keepRawData()
     {
         $this->keepRawDataFlag = true;
     }
 
-    public function dropRawData()
+    final public function dropRawData()
     {
         $this->keepRawDataFlag = false;
     }
@@ -247,7 +247,7 @@ class Service extends Logger
      * If a service never adds a host but activates CORS requests, then RESTling will accept requests from
      * all sources.
      */
-    public function addCORSHost($host, $methods)
+    final public function addCORSHost($host, $methods)
     {
         // host can be an array. The methods are an array too. Note that this is not associative and
         // that the methods are allowed for the provided hosts.
@@ -335,7 +335,7 @@ class Service extends Logger
      * In the case of no path_info handling, RESTling will test for the method ```post_hello```.
      * Only if this does not exist, then it will test for ```post_world```.
      */
-    public function setOperationParameter($param) {
+    final public function setOperationParameter($param) {
         if (isset($param) && !empty($param)) {
             if (!is_array($param)) {
                 $param = array($param);
@@ -359,12 +359,12 @@ class Service extends Logger
      * service allows caching, it can do so by calling allowCache(). This will
      * surpress the default cache-control header.
      */
-    public function allowCache()
+    final public function allowCache()
     {
         $this->withCaching = true;
     }
 
-    public function forbidCache()
+    final public function forbidCache()
     {
         $this->withCaching = false;
     }
@@ -454,7 +454,7 @@ class Service extends Logger
      * If a service needs to support other data types the responseData()
      * method has to be overridden.
      */
-    public function run()
+    final public function run()
     {
         // first try to load any data. This might be needed for operation determination
         $this->loadData();
@@ -591,7 +591,7 @@ class Service extends Logger
         }
     }
 
-    protected function handleStatus()
+    final protected function handleStatus()
     {
         if ($this->status != Service::OK
             && empty($this->response_code))
@@ -680,7 +680,7 @@ class Service extends Logger
         }
     }
 
-     /**
+    /**
      * @method void initializeRun()
      *
      * This function is used to prepare all internal setup that is required BEFORE the
@@ -707,6 +707,17 @@ class Service extends Logger
      *
      * In case a service expects different data formats of input this method has to be
      * overwridden.
+     *
+     * one can implement new content type parers by implementing a new content type parser.
+     * For example for handling text/markdown content one can write the following method
+     * to the code
+     *
+     * ```
+     * protected function parse_text_markdown($data) {
+     *     return array("data" => $data);
+     * }
+     * ```
+     *
      */
     protected function loadData() {
         if (($this->method === "PUT" ||
@@ -725,29 +736,19 @@ class Service extends Logger
 
                 if (strlen($data))
                 {
-                    $ct = explode(";", $_SERVER['CONTENT_TYPE']);
-                    $ct = $ct[0];
+                    list($ct, $rest) = explode(";", $_SERVER['CONTENT_TYPE'], 2);
                     $this->inputDataType = $ct;
-                    switch ($ct)
+
+                    list($major, $minor) = explode("/", $ct)
+                    $fmiName = "parse_" . implode("_", preg_split("/-+\//",$major)) . "_" . implode("_", preg_split("/-+\//", $minor));
+                    $fmaName = "parse_" . implode("_", preg_split("/-+\//",$major));
+
+                    if ( method_exists($this, $fmiName) )
                     {
-                        case 'application/json':
-                            $this->inputData = json_decode($data, true);
-                            break;
-                        case 'text/plain':
-                        case 'text/html':
-                            $this->inputData = $data;
-                            break;
-                        case 'application/x-www-form-urlencoded':
-                            // all form data is stored in $_POST
-                            if (empty($_POST)) {
-                                // populate POST
-                                $_POST = array();
-                                parse_str($data, $_POST);
-                            }
-                            $this->inputData = $_POST;
-                            break;
-                        default;
-                            break;
+                        $this->inputData = call_user_func(array($this, $fmiName), $data);
+                    }
+                    else if (method_exists($this, $fmaName)) {
+                        $this->inputData = call_user_func(array($this, $fmaName), $data);
                     }
                 }
                 else if (!empty($_POST)) {
@@ -761,6 +762,34 @@ class Service extends Logger
                 $this->status = Service::BAD_DATA;
             }
         }
+    }
+
+    /**
+     * default data loaders
+     *
+     * parse_application_json($data)
+     * parse_text($data)
+     * parse_application_x_www_form_urlencoded($data)
+     */
+    protected function parse_application_json($data) {
+        return json_decode($data, true);
+    }
+
+    protected function parse_text($data) {
+        return array("data" => $data);
+    }
+
+    protected function parse_application_x_www_form_urlencoded($data) {
+        if (empty($_POST)) {
+            // populate POST
+            $_POST = array();
+            parse_str($data, $_POST);
+        }
+        return $_POST;
+    }
+
+    protected function parse_multipart_form_data($data) {
+        return $_POST;
     }
 
      /**
@@ -857,7 +886,7 @@ class Service extends Logger
         return $this->findMostSignificantOpMatch($m,$p);
     }
 
-    protected function findMostSignificantOpMatch($method, $pathinfo)
+    final protected function findMostSignificantOpMatch($method, $pathinfo)
     {
         $p = array();
         $c = $pathinfo;
@@ -1059,7 +1088,7 @@ class Service extends Logger
      *
      * Adds a header Validator. These validators are run during the header validation phase.
      */
-    public function addHeaderValidator($validatorObject)
+    final public function addHeaderValidator($validatorObject)
     {
         if (isset($validatorObject))
         {
@@ -1073,7 +1102,7 @@ class Service extends Logger
      *
      * Adds a data Validator. These validators are run during the data validation phase.
      */
-    public function addDataValidator($validatorObject)
+    final public function addDataValidator($validatorObject)
     {
         if (isset($validatorObject))
         {
@@ -1099,7 +1128,7 @@ class Service extends Logger
      * If a service whishes to use a different response code than 200, then it
      * should set the value to the response_code property.
      */
-    protected function responseCode()
+    final protected function responseCode()
     {
         if ( ($this->response_code === 200 || empty($this->response_code)) &&
             ($this->streaming || (!isset($this->streaming) &&
@@ -1181,7 +1210,7 @@ class Service extends Logger
      * Access-Control-Allow-Methods headers. If a service requires additional CORS
      * headers it should override this function.
      */
-    protected function CORSHeader($origin, $methods)
+    final protected function CORSHeader($origin, $methods)
     {
         header('Access-Control-Allow-Origin: ' . $origin);
         header('Access-Control-Allow-Methods: ' . $methods);

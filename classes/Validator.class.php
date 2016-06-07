@@ -36,7 +36,7 @@ class Validator extends Logger
      * NOTE: The options method will never get validated by the header
      * validation.
      */
-    public function setMethods($methodObject)
+    final public function setMethods($methodObject)
     {
         if (!isset($this->oMethods))
         {
@@ -63,7 +63,7 @@ class Validator extends Logger
      *
      * This method is called by the RESTling run() method.
      */
-    public function setMethod($methodName)
+    final public function setMethod($methodName)
     {
         if (isset($methodName) && !empty($methodName))
         {
@@ -76,7 +76,7 @@ class Validator extends Logger
      *
      * used for data validators. receives the data object to be validated.
      */
-    public function setData($data, $type)
+    final public function setData($data, $type)
     {
         if (isset($data))
         {
@@ -96,7 +96,7 @@ class Validator extends Logger
      *
      * This method should be FINAL and must not be overloaded.
      */
-    public function run()
+    final public function run()
     {
 
         $this->state = 1;
@@ -133,7 +133,7 @@ class Validator extends Logger
      *
      * possible states are -1: failed validation; 0: not processed; and 1: validation succeeded.
      */
-    public function isValid()
+    final public function isValid()
     {
         return $this->state;
     }
