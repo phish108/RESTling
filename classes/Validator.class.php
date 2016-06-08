@@ -5,7 +5,7 @@ class Validator extends Logger
 {
     protected $service;  ///< internal handler for the service class.
     protected $method;   ///< the method to be validated; <- this is the operation to be called!
-    protected $oMethods; ///< An object with the methods to be validated. <- possible excluded operations
+    protected $ignoreOps; ///< An object with the methods to be validated. <- possible excluded operations
 
     protected $data;
     protected $type;
@@ -36,11 +36,11 @@ class Validator extends Logger
      * NOTE: The options method will never get validated by the header
      * validation.
      */
-    final public function setMethods($methodObject)
+    final public function ignoreOperations($methodObject)
     {
-        if (!isset($this->oMethods))
+        if (!isset($this->ignoreOps))
         {
-            $this->oMethods = array();
+            $this->ignoreOps = array();
         }
 
         if (isset($methodObject) && !empty($methodObject))
@@ -49,7 +49,7 @@ class Validator extends Logger
             {
                 if (!in_array($value, $this->oMethod))
                 {
-                    $this->oMethods[] = $value;
+                    $this->ignoreOps[] = $value;
                 }
             }
         }
@@ -95,19 +95,63 @@ class Validator extends Logger
      * executes the validation.
      *
      * This method should be FINAL and must not be overloaded.
+     *
+     * The validation runs in three steps:
+     *
+     * 1. skip operations that are marked to be ignored
+     * 2. run the generic validation
+     * 3. if defined run operation specific validation.
+     *
+     * for step 2 you will have to implement a validate() function
+     *
+     * for step 3 you have to implement a validate_<operation> function.
+     *
+     * Both function MUST return a boolean value to indicate whether the
+     * validation succeeded.
+     *
+     * Operation specific validation:
+     *
+     * Imagine that your service class has a handler method ```get_test()``` and and many other operations.
+     * While all other operations just need the generic validation, ```get_test()``` requires something special.
+     *
+     * In your validator instance you will then implement the following
+     *
+     * ```
+     * protected function validate() {
+     *     ... // check generic operation preconditions.
+     *     return true;
+     * }
+     *
+     * protected function validate_get_test() {
+     *      ... // check  special preconditions for this case.
+     *      return true;
+     * }
+     * ```
+     *
      */
     final public function run()
     {
 
         $this->state = 1;
 
-        if (isset($this->oMethods) &&
-            in_array($this->method, $this->oMethods))
+        if (isset($this->ignoreOps) &&
+            in_array($this->method, $this->ignoreOps))
         {
             return true;
         }
 
+        // generic validate
         if(!$this->validate())
+        {
+            $this->state = -1;
+            return false;
+        }
+
+        // method specific validation
+        $fMethod = "validate_". $this->method;
+
+        if (method_exists($this, $fMethod) &&
+            !call_user_func(array($this, $fMethod)))
         {
             $this->state = -1;
             return false;

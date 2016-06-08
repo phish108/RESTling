@@ -744,7 +744,7 @@ class Service extends Logger
                     list($ct, $rest) = explode(";", $_SERVER['CONTENT_TYPE'], 2);
                     $this->inputDataType = $ct;
 
-                    list($major, $minor) = explode("/", $ct)
+                    list($major, $minor) = explode("/", $ct);
                     $fmiName = "parse_" . implode("_", preg_split("/-+\//",$major)) . "_" . implode("_", preg_split("/-+\//", $minor));
                     $fmaName = "parse_" . implode("_", preg_split("/-+\//",$major));
 
