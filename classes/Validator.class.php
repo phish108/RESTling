@@ -4,37 +4,88 @@ namespace RESTling;
 class Validator extends Logger
 {
     protected $service;  ///< internal handler for the service class.
-    protected $method;   ///< the method to be validated; <- this is the operation to be called!
+    protected $method;   ///< the HTTP method to be validated;
+    protected $operation; ///< this is the operation to be called!
+    protected $path_info; ///< the request's processed pathinfo
+
     protected $ignoreOps; ///< An object with the methods to be validated. <- possible excluded operations
+    protected $ignoreMethods;
 
     protected $data;
     protected $type;
 
     private $state = 0;  ///< returns the validation state; 0: not validated; -1: invalid; 1: valid
 
+    /**
+     * @public @method setService($service)
+     * @public @method setPathInfo($pathinfo)
+     * @public @method setOperation($pathinfo)
+     * @public @method setMethod($pathinfo)
+     * @public @method setData($data, $type)
+     *
+     * Setters used by the RESTling\Service class in order to pass the
+     * processed request data to the validator.
+     *
+     * setData() is only used for data validators
+     * (set via RESTling\Service::addDataValidators()).
+     */
     public function setService($service)
     {
         $this->service = $service;
     }
 
+    public function setPathInfo($pathinfo) {
+        if (isset($pathinfo) && !empty($pathinfo))
+        {
+            $this->path_info = $pathinfo;
+        }
+    }
+
+    public function setOperation($op) {
+        if (isset($op) && !empty($op))
+        {
+            $this->operation = $op;
+        }
+    }
+
+    final public function setMethod($methodName)
+    {
+        if (isset($methodName) && !empty($methodName))
+        {
+            $this->method = $methodName;
+        }
+    }
+
+    final public function setData($data, $type)
+    {
+        if (isset($data))
+        {
+            $this->data = $data;
+        }
+
+        if (isset($type) && !empty($type))
+        {
+            $this->type = $type;
+        }
+    }
+
+
     /**
-     * @method setMethods
-     * @param {OBJECT} $methodObject
+     * @public @method ignoreOperations($names)
+     * @public @method ignoreMethods($names)
+     * @param {array} $names
      *
-     * Interface for informing the validator, which methods to validate.
+     * informing the validator to automatically accept the provided list
+     * of names.
      *
-     * The $methodObject is an key-value pair array, where the key is the
-     * method name and the value is a boolean. TRUE values mean that the
-     * request MUST get validated.
+     * ignoreOperations ignores the computed operations to be called.
+     * ignoreMethods ignores the provided HTTP methods.
      *
-     * FALSE values mean that the request MUST NOT get validated, in this
-     * case the request is automatically considered as valid.
+     * The validator will first check for the http method and then for the operations.
+     * If the "get" method is ignore the will automatically ignore all subordinate
+     * operations (e.g. get_example() will not be validated).
      *
-     * A method that does appear in the $methodObject will get always
-     * validated.
-     *
-     * NOTE: The options method will never get validated by the header
-     * validation.
+     * For complex service APIs it is recommended to ignore individual operations.
      */
     final public function ignoreOperations($methodObject)
     {
@@ -55,37 +106,23 @@ class Validator extends Logger
         }
     }
 
-    /**
-     * @method setMethod()
-     * @param {STRING} methodName
-     *
-     * Sets the method name that will get called during the active request.
-     *
-     * This method is called by the RESTling run() method.
-     */
-    final public function setMethod($methodName)
+    final public function ignoreMethods($methodObject)
     {
-        if (isset($methodName) && !empty($methodName))
+        if (!isset($this->ignoreOps))
         {
-            $this->method = $methodName;
-        }
-    }
-
-    /**
-     * @public @method setData($data, $type)
-     *
-     * used for data validators. receives the data object to be validated.
-     */
-    final public function setData($data, $type)
-    {
-        if (isset($data))
-        {
-            $this->data = $data;
+            $this->ignoreOps = array();
         }
 
-        if (isset($type) && !empty($type))
+        if (isset($methodObject) && !empty($methodObject))
         {
-            $this->type = $type;
+            foreach($methodObject as $value)
+            {
+                $value = strtolower($value);
+                if (!in_array($value, $this->oMethod))
+                {
+                    $this->ignoreMethods[] = $value;
+                }
+            }
         }
     }
 
@@ -134,8 +171,14 @@ class Validator extends Logger
 
         $this->state = 1;
 
+        if (isset($this->ignoreMethods) &&
+            in_array($this->method, $this->ignoreMethods))
+        {
+            return true;
+        }
+
         if (isset($this->ignoreOps) &&
-            in_array($this->method, $this->ignoreOps))
+            in_array($this->operation, $this->ignoreOps))
         {
             return true;
         }
@@ -148,7 +191,7 @@ class Validator extends Logger
         }
 
         // method specific validation
-        $fMethod = "validate_". $this->method;
+        $fMethod = "validate_". $this->operation;
 
         if (method_exists($this, $fMethod) &&
             !call_user_func(array($this, $fMethod)))
@@ -179,7 +222,7 @@ class Validator extends Logger
      */
     final public function isValid()
     {
-        return $this->state;
+        return ($this->state > 0);
     }
 
     public function error()

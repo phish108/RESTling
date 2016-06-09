@@ -7,8 +7,10 @@
 // only GET and POST methods.
 //
 // All other method and path combinations will fail with a 405 response error
+set_include_path(".." . PATH_SEPARATOR .
+                get_include_path());
 
-include('../contrib/Restling.auto.php');
+include('contrib/Restling.auto.php');
 
 class StreamingAPIExample
       extends \RESTling\Service
@@ -83,9 +85,6 @@ class StreamingAPIExample
 }
 
 $service = new StreamingAPIExample();
-
-// $service->addValidator(new OauthSession($dbh)); // you may add some header validation at this point
-// $service->addCORShost('*', 'Authorization');    // allow cross origin headers (carfully, this won't work with some clients)
 
 $service->run();
 ?>

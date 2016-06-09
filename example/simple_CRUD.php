@@ -2,7 +2,10 @@
 
 // Very Basic RESTling Service responding to GET, PUT, POST and DELETE
 // requests.
-include('../contrib/Restling.auto.php');
+set_include_path(".." . PATH_SEPARATOR .
+                get_include_path());
+
+include('contrib/Restling.auto.php');
 
 class RestlingTest
       extends \RESTling\Service

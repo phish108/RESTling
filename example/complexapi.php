@@ -7,8 +7,10 @@
 // only GET and POST methods.
 //
 // All other method and path combinations will fail with a 405 response error
+set_include_path(".." . PATH_SEPARATOR .
+                get_include_path());
 
-include('../contrib/Restling.auto.php');
+include('contrib/Restling.auto.php');
 
 class ComplexAPIExample
       extends \RESTling\Service

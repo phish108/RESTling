@@ -1012,7 +1012,9 @@ class Service extends Logger
         {
             $anyOK = false;
             foreach ($this->dataValidators as $validator) {
-                $validator->setMethod($this->operation);
+                $validator->setMethod($this->method);
+                $validator->setOperation($this->operation);
+                $validator->setPathInfo($this->path_info);
                 $validator->setData($this->inputData, $this->inputDataType);
 
                 $res = $validator->run();
@@ -1069,7 +1071,9 @@ class Service extends Logger
         {
             $anyOK = false;
             foreach ($this->headerValidators as $validator) {
-                $validator->setMethod($this->operation);
+                $validator->setMethod($this->method);
+                $validator->setOperation($this->operation);
+                $validator->setPathInfo($this->path_info);
 
                 $res = $validator->run();
 
