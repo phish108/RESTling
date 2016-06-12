@@ -741,7 +741,8 @@ class Service extends Logger
 
                 if (strlen($data))
                 {
-                    list($ct, $rest) = explode(";", $_SERVER['CONTENT_TYPE'], 2);
+                    $rest = explode(";", $_SERVER['CONTENT_TYPE'], 2);
+                    $ct = array_shift($rest);
                     $this->inputDataType = $ct;
 
                     list($major, $minor) = explode("/", $ct);
