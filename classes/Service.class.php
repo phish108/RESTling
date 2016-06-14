@@ -341,7 +341,7 @@ class Service extends Logger
      * Only if this does not exist, then it will test for ```post_world```.
      */
     final public function setOperationParameter($param) {
-        if (isset($param) && !empty($param)) {
+        if (!empty($param)) {
             if (!is_array($param)) {
                 $param = array($param);
             }
@@ -476,20 +476,20 @@ class Service extends Logger
         $this->stream_headers();
 
         // ensure that the response code and the headers are properly set
-        if (isset($this->streaming) && $this->streaming)
+        if ($this->streaming)
         {
             $this->init_stream();
             $this->stream();
         }
 
         // ensure that the client actually receives all data.
-        if (isset($this->data))
+        if (!empty($this->data))
         {
             // $this->mark('default ' . $this->data);
             $this->respond();
         }
 
-        if (isset($this->streaming) && $this->streaming)
+        if ($this->streaming)
         {
             $this->end_stream();
         }
@@ -943,22 +943,19 @@ class Service extends Logger
     }
 
     private function findParameterOperation($operation) {
-        if (isset($this->operation_parameter) &&
-            !empty($this->operation_parameter)) {
+        if (!empty($this->operation_parameter)) {
 
             foreach ($this->operation_parameter as $opext) {
                 $op = "";
                 // first check query params
-                if (isset($this->queryParam) &&
-                    !empty($this->queryParam) &&
+                if (!empty($this->queryParam) &&
                     array_key_exists($opext, $this->queryParam)) {
 
                     $op = $operation . "_" . $this->queryParam[$opext];
                 }
 
                 // then input params
-                if (isset($this->inputData) &&
-                    !empty($this->inputData) &&
+                if (!empty($this->inputData) &&
                     array_key_exists($opext, $this->inputData)) {
 
                     $op = $operation . "_" . $this->inputData[$opext];

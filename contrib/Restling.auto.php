@@ -15,7 +15,7 @@
 
         $root = array_shift($parts);
 
-        if (isset($root) && !empty($root)) {
+        if (!empty($root)) {
             $cpath = array();
             // direct namespace
             $cpath[] = $root . "/" . implode("/", $parts) . ".class.php";

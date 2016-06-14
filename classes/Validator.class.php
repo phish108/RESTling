@@ -35,14 +35,14 @@ class Validator extends Logger
     }
 
     public function setPathInfo($pathinfo) {
-        if (isset($pathinfo) && !empty($pathinfo))
+        if (!empty($pathinfo))
         {
             $this->path_info = $pathinfo;
         }
     }
 
     public function setOperation($op) {
-        if (isset($op) && !empty($op))
+        if (!empty($op))
         {
             $this->operation = $op;
         }
@@ -50,7 +50,7 @@ class Validator extends Logger
 
     final public function setMethod($methodName)
     {
-        if (isset($methodName) && !empty($methodName))
+        if (!empty($methodName))
         {
             $this->method = $methodName;
         }
@@ -94,7 +94,7 @@ class Validator extends Logger
             $this->ignoreOps = array();
         }
 
-        if (isset($methodObject) && !empty($methodObject))
+        if (!empty($methodObject))
         {
             foreach($methodObject as $value)
             {
@@ -113,7 +113,7 @@ class Validator extends Logger
             $this->ignoreOps = array();
         }
 
-        if (isset($methodObject) && !empty($methodObject))
+        if (!empty($methodObject))
         {
             foreach($methodObject as $value)
             {
@@ -171,13 +171,13 @@ class Validator extends Logger
 
         $this->state = 1;
 
-        if (isset($this->ignoreMethods) &&
+        if (!empty($this->ignoreMethods) &&
             in_array($this->method, $this->ignoreMethods))
         {
             return true;
         }
 
-        if (isset($this->ignoreOps) &&
+        if (!empty($this->ignoreOps) &&
             in_array($this->operation, $this->ignoreOps))
         {
             return true;

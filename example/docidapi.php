@@ -30,9 +30,7 @@ class OpVal
                 }
                 break;
             default:
-                if (!isset($this->path_info) ||
-                    !isset($this->path_info[0]) ||
-                    empty($this->path_info) ||
+                if (empty($this->path_info) ||
                     $this->path_info[0] <= 0 ||
                      $this->path_info[0] >= 10) {
                     return false;
