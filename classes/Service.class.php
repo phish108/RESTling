@@ -575,8 +575,7 @@ class Service extends Logger
             }
         }
 
-        if ($this->status === Service::OK &&
-            !(empty($this->data) && empty($this->queryParam)))
+        if ($this->status === Service::OK)
         {
             $this->validateData();
         }
