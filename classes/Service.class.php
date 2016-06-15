@@ -598,7 +598,7 @@ class Service extends Logger
 
     final protected function handleStatus()
     {
-        if (empty($this->response_code))
+        if (!isset($this->response_code) )
         {
             /**
              * Before entering the response generation phase, RESTling evaluates the pipeline status and
@@ -607,7 +607,7 @@ class Service extends Logger
              *
              * If debugging is enabled, this mechanism will also log any pipeline errors.
              */
-            $this->log("service failed in stage " . $this->status);
+            // $this->log("service failed in stage " . $this->status);
 
             switch($this->status)
             {
@@ -1275,7 +1275,7 @@ class Service extends Logger
             header('Cache-Control: no-cache');
         }
 
-        // sub classes may implement special header hander for each method.
+        // sub classes may implement special header handler for each method.
         if ( method_exists($this, 'header_'.$this->method) )
         {
             call_user_func(array($this, 'header_'.$this->method));
@@ -1331,7 +1331,7 @@ class Service extends Logger
         }
 
         if ( $this->status == Service::OK &&
-            ($this->response_code == 200 || empty($this->response_code)) )
+            ($this->response_code == 200 || !isset($this->response_code)) )
         {
             $outputfunction = 'text_plain';
             if (!empty($this->response_type)) {
@@ -1471,6 +1471,16 @@ class Service extends Logger
         {
             $this->respond_with_message($this->data);
         }
+    }
+
+    /**
+     * @method ok()
+     *
+     * allows applications to set the response code to 200 even if the
+     * process failed at some point.
+     */
+    public function ok() {
+        $this->response_code = 200;
     }
 
     /**
