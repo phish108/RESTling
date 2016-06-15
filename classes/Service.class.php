@@ -633,7 +633,7 @@ class Service extends Logger
                  * a 400 Bad Request error to the client.
                  */
                 $this->log('malformed data detected!');
-                $this->bad_request();
+                $this->bad_request('malformed data detected!');
                 break;
             case Service::BAD_HEADER:
                 /**
@@ -641,7 +641,7 @@ class Service extends Logger
                  * a 412 Precondition Failed response to the client.
                  */
                 $this->log('malformed header detected!');
-                $this->precondition_failed();
+                $this->bad_request('malformed header detected!');
                 break;
             case Service::BAD_METHOD:
                 /**
@@ -668,10 +668,7 @@ class Service extends Logger
                  * by calling authentication_required() during validateOperation().
                  */
                 $this->log('access forbidden by application logic');
-                if (empty($this->request_code))
-                {
-                    $this->forbidden();
-                }
+                $this->forbidden();
                 break;
             case Service::OPERATION_FAILED;
                 $this->log('operation failed');
