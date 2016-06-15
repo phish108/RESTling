@@ -233,9 +233,14 @@ class Validator extends Logger
         return ($this->state > 0);
     }
 
+    final public function isError()
+    {
+        return ($this->state < 0);
+    }
+
     public function error()
     {
-        if ($this->state < 0)
+        if ($this->isError())
         {
             // return authentication required by default
             $this->service->authentication_required();
