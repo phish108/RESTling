@@ -576,7 +576,7 @@ class Service extends Logger
         }
 
         if ($this->status === Service::OK &&
-            in_array($this->method, array("PUT", "POST")))
+            !(empty($this->data) && empty($this->queryParam)))
         {
             $this->validateData();
         }
