@@ -13,6 +13,7 @@ class Validator extends Logger
 
     protected $data;
     protected $type;
+    protected $param; ///< processed query parameters
 
     private $state = 0;  ///< returns the validation state; 0: not validated; -1: invalid; 1: valid
 
@@ -58,17 +59,24 @@ class Validator extends Logger
 
     final public function setData($data, $type)
     {
-        if (isset($data))
+        if (!empty($data))
         {
             $this->data = $data;
         }
 
-        if (isset($type) && !empty($type))
+        if (!empty($type))
         {
             $this->type = $type;
         }
     }
 
+    final public function setParam($data)
+    {
+        if (!empty($data))
+        {
+            $this->param = $data;
+        }
+    }
 
     /**
      * @public @method ignoreOperations($names)

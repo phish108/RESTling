@@ -1013,6 +1013,7 @@ class Service extends Logger
                 $validator->setOperation($this->operation);
                 $validator->setPathInfo($this->path_info);
                 $validator->setData($this->inputData, $this->inputDataType);
+                $validator->setParam($this->queryParam);
 
                 $res = $validator->run();
 
@@ -1071,6 +1072,7 @@ class Service extends Logger
                 $validator->setMethod($this->method);
                 $validator->setOperation($this->operation);
                 $validator->setPathInfo($this->path_info);
+                $validator->setParam($this->queryParam);
 
                 $res = $validator->run();
 
