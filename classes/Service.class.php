@@ -598,8 +598,7 @@ class Service extends Logger
 
     final protected function handleStatus()
     {
-        if ($this->status != Service::OK
-            && empty($this->response_code))
+        if (empty($this->response_code))
         {
             /**
              * Before entering the response generation phase, RESTling evaluates the pipeline status and
@@ -680,6 +679,9 @@ class Service extends Logger
                 break;
             default:
                 // case Service::OK
+                if (empty($this->data) && !$this->streaming) {
+                    $this->no_content();
+                }
                 break;
             }
         }
@@ -1323,43 +1325,40 @@ class Service extends Logger
      */
     protected function respond($data=null)
     {
-        if (isset($data))
+        if (!empty($data))
         {
             $this->data = $data;
         }
 
-        if (isset($this->data))
+        if ( $this->status == Service::OK &&
+            ($this->response_code == 200 || empty($this->response_code)) )
         {
-            if ( $this->status == Service::OK &&
-                ($this->response_code == 200 || empty($this->response_code)) )
-            {
-                $outputfunction = 'text_plain';
-                if (!empty($this->response_type)) {
-                    switch ( strtolower($this->response_type) )
-                    {
-                        case 'json':
-                            $outputfunction = 'json_data';
-                            break;
-                        case 'form':
-                            $outputfunction = 'form_encoded';
-                            break;
-                        case 'text':
-                            break;
-                        default:
-                            $outputfunction = strtolower($this->response_type);
-                            break;
-                    }
-                }
-
-                if ( method_exists($this, 'respond_'. $outputfunction) )
+            $outputfunction = 'text_plain';
+            if (!empty($this->response_type)) {
+                switch ( strtolower($this->response_type) )
                 {
-                    call_user_func(array($this, 'respond_'. $outputfunction));
+                    case 'json':
+                        $outputfunction = 'json_data';
+                        break;
+                    case 'form':
+                        $outputfunction = 'form_encoded';
+                        break;
+                    case 'text':
+                        break;
+                    default:
+                        $outputfunction = strtolower($this->response_type);
+                        break;
                 }
             }
-            else
+
+            if ( method_exists($this, 'respond_'. $outputfunction) )
             {
-                $this->respond_with_message($this->data);
+                call_user_func(array($this, 'respond_'. $outputfunction));
             }
+        }
+        else
+        {
+            $this->respond_with_message($this->data);
         }
 
         // empty the data property!
@@ -1404,24 +1403,16 @@ class Service extends Logger
      */
     protected function respond_json_data()
     {
-        if (isset($this->data))
+        if (!empty($this->data))
         {
             if (is_array($this->data) || is_object($this->data))
             {
                 echo(json_encode($this->data));
             }
-            else if (!empty($this->data))
+            else
             {
                 echo($this->data);
             }
-            else
-            {
-                $this->no_content();
-            }
-        }
-        else
-        {
-            $this->no_content();
         }
     }
 
@@ -1460,11 +1451,7 @@ class Service extends Logger
             }
 
         }
-        if (empty($retval))
-        {
-            $this->no_content();
-        }
-        else
+        if (!empty($retval))
         {
             echo($retval);
         }
@@ -1480,11 +1467,7 @@ class Service extends Logger
      */
     protected function respond_text_plain()
     {
-        if (empty($this->data))
-        {
-            $this->no_content();
-        }
-        else
+        if (!empty($this->data))
         {
             $this->respond_with_message($this->data);
         }
