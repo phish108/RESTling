@@ -22,6 +22,10 @@ class Logger
         $this->debugMode = $mode;
     }
 
+    public function getDebugMode() {
+        return $this->debugMode;
+    }
+    
     /**
      * @method void fatal($message)
      *
