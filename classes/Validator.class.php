@@ -97,7 +97,7 @@ class Validator extends Logger
      */
     final public function ignoreOperations($methodObject)
     {
-        if (!isset($this->ignoreOps))
+        if (empty($this->ignoreOps))
         {
             $this->ignoreOps = array();
         }
@@ -106,7 +106,7 @@ class Validator extends Logger
         {
             foreach($methodObject as $value)
             {
-                if (!in_array($value, $this->oMethod))
+                if (!in_array($value, $this->ignoreOps))
                 {
                     $this->ignoreOps[] = $value;
                 }
@@ -116,9 +116,9 @@ class Validator extends Logger
 
     final public function ignoreMethods($methodObject)
     {
-        if (!isset($this->ignoreOps))
+        if (empty($this->ignoreMethods))
         {
-            $this->ignoreOps = array();
+            $this->ignoreMethods = array();
         }
 
         if (!empty($methodObject))
@@ -126,7 +126,7 @@ class Validator extends Logger
             foreach($methodObject as $value)
             {
                 $value = strtolower($value);
-                if (!in_array($value, $this->oMethod))
+                if (!in_array($value, $this->ignoreMethods))
                 {
                     $this->ignoreMethods[] = $value;
                 }
