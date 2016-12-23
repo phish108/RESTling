@@ -7,7 +7,7 @@ use RESTling\Output\Base as BaseResponder;
 
 class Service
 {
-    private   $model;
+    protected $model;
     protected $inputHandler;
     private   $outputHandler;
     private   $securityHandler;
@@ -129,11 +129,13 @@ class Service
             "prepareOutputProcessor"
         ];
 
-        foreach ($fLoop as $func) {
-            call_user_func(array($this, $func));
+        if (empty($this->error)) {
+            foreach ($fLoop as $func) {
+                call_user_func(array($this, $func));
 
-            if (!empty($this->error)) {
-                break;
+                if (!empty($this->error)) {
+                    break;
+                }
             }
         }
 
@@ -158,7 +160,7 @@ class Service
         }
     }
 
-    private function parseInput() {
+    protected function parseInput() {
         $method = $_SERVER["REQUEST_METHOD"];
 
         if ($method === "PUT" ||
@@ -290,9 +292,11 @@ class Service
         // prepare out put after error handling
         if (!empty($this->error)) {
             $this->outputHandler->setErrorMessage($this->error);
-            $this->outputHandler->setTraceback($this->model->getAllErrors());
-            if ($this->model->hasData()) {
-                $this->outputHandler->addTraceback("data", $this->model->getData());
+            if ($this->model) {
+                $this->outputHandler->setTraceback($this->model->getAllErrors());
+                if ($this->model->hasData()) {
+                    $this->outputHandler->addTraceback("data", $this->model->getData());
+                }
             }
         }
 
@@ -327,13 +331,15 @@ class Service
         }
 
         // get additional model headers
-        if (!empty($headers = $this->model->getHeaders())) {
+        if ($this->model &&
+            !empty($headers = $this->model->getHeaders())) {
             foreach ($headers as $headername => $headervalue) {
                 header($headername . ": " . $headervalue);
             }
         }
 
-        if ($this->model->hasData()) {
+        if ($this->model &&
+            $this->model->hasData()) {
             // stream the output
             while ($this->model->hasData()) {
                 $this->outputHandler->send($this->model->getData());
@@ -348,7 +354,7 @@ class Service
         return [];
     }
 
-    private function handleError() {
+    protected function handleError() {
         if(!$this->outputHandler) {
             $this->outputHandler = new BaseResponder();
         }
@@ -435,7 +441,7 @@ class Service
                     break;
             }
         }
-        elseif (!$this->model->hasData()) {
+        elseif ($this->model && !$this->model->hasData()) {
             $this->responseCode = 204;
         }
         else {
