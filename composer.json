@@ -1,0 +1,21 @@
+{
+    "name": "mobinaut/RESTling",
+    "type": "library",
+    "description": "A flexible framework for REST services.",
+    "homepage": "https://github.com/phish108/RESTling",
+    "license": "AGPL-3.0",
+    "version": "2.0.0-dev",
+    "autoload": {
+        "psr-4": {
+            "mobinaut\\RESTling\\":  "src/"
+        }
+    },
+    "require": {
+        "php": ">=5.5.0",
+        "spomky-labs/jose": "^6.1",
+        "league/json-guard":  ""
+    },
+    "require-dev": {
+        "phpunit/phpunit" : "4.*"
+    },
+}
