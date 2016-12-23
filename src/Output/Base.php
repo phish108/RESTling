@@ -9,6 +9,8 @@ class Base {
     protected $statusCode;
     protected $errorMessage;
 
+    private $dataSent= false;
+
     public function __construct() {}
 
     public function getContentType() {
@@ -51,15 +53,20 @@ class Base {
     public function send($data) {
         if (gettype($data) == "string") {
             echo($data);
+            $this->dataSent = true;
         }
     }
 
     public function finish() {
         // TODO implement the error message formatting
-        if (!empty($this->traceback)) {
-            if (!empty($this->traceback["data"])) {
-                echo($this->traceback['data']);
+        if (!$this->dataSent && !empty($this->errorMessage)) {
+            if (!empty($this->traceback)) {
+                if (!empty($this->traceback["data"])) {
+                    echo($this->traceback['data']);
+                }
             }
+
+            echo($this->errorMessage);
         }
     }
 
