@@ -2,36 +2,42 @@
 
 // Very Basic RESTling Service responding to GET, PUT, POST and DELETE
 // requests.
-set_include_path(".." . PATH_SEPARATOR .
-                get_include_path());
 
-include('contrib/Restling.auto.php');
+require_once __DIR__."/../vendor/autoload.php";
 
-class RestlingTest
-      extends \RESTling\Service
+
+// inherit data handling functions from RESTling\Model
+// for complex data processing you may want to override the
+// hasData() and getData() functions.
+// If you want to provide complex error information, you want to
+// implement  
+class RestlingTest extends \RESTling\Model
 {
-    protected function get()
+    public function get()
     {
         $this->data = 'get ok';
     }
 
-    protected function post()
+    public function post()
     {
         $this->data = 'post ok';
     }
 
-    protected function put()
+    public function put()
     {
         $this->data = 'put ok';
+        return "Created"; // return created error
     }
 
-    protected function delete()
+    public function delete()
     {
-        $this->gone("delete ok");
+        error_log("delete");
+        return "Gone"; // return Gone error
     }
 }
 
-$service = new RestlingTest();
+$service = new RESTling\Service();
+$service->setModel(new RestlingTest());
 
 $service->run();
 ?>
