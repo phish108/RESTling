@@ -1,0 +1,67 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "version": "0.0.1",
+        "title": "Restling Test"
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Gives you a high v\n",
+                "operationId": "gimmeV",
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "description": "puts something into your postbox\n",
+                "operationId": "postbox",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "put": {
+                "description": "puts you down ;)\nreports Created when successfull\n",
+                "operationId": "putMeDown",
+                "responses": {
+                    "201": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "delete": {
+                "description": "erases everything! Reports GONE if successfull\n",
+                "operationId": "erase",
+                "responses": {
+                    "410": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/{foo}": {
+            "get": {
+                "description": "Gives you a high v\n",
+                "operationId": "gimmeVmore",
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "put": {
+                "description": "puts you down ;)\nreports Created when successfull\n",
+                "operationId": "putMeFurtherDown",
+                "responses": {
+                    "201": {
+                        "description": "OK"
+                    }
+                }
+            }
+        }
+    }
+}
