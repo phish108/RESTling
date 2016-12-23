@@ -5,7 +5,7 @@ namespace RESTling\Output;
 class Base {
     protected $contentType = "text/plain";
 
-    protected $traceback;
+    protected $traceback = [];
     protected $statusCode;
     protected $errorMessage;
 
@@ -35,17 +35,29 @@ class Base {
     }
 
     public function setTraceback($traceback) {
+        if (!is_array($traceback)) {
+            $traceback = ["error" => $traceback];
+        }
         $this->traceback = $traceback;
     }
 
+    public function addTraceback($name, $message) {
+        $this->traceback[$name] = $message;
+    }
+
     public function send($data) {
-        if (gettype(data) == "string") {
+        if (gettype($data) == "string") {
             echo($data);
         }
     }
 
     public function finish() {
         // TODO implement the error message formatting
+        if (!empty($this->traceback)) {
+            if (!empty($this->traceback["data"])) {
+                echo($this->traceback['data']);
+            }
+        }
     }
 
 }
