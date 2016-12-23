@@ -43,6 +43,9 @@ class Service
 
     private $corsHosts = [];
 
+    protected $preferredOutputType;
+    protected $availableOutputTypes = [];
+
     public function __construct() {}
 
     final public function setModel($m) {
@@ -199,8 +202,8 @@ class Service
         }
     }
 
-    private function prepareOutputProcessor() {
-         // determine the output handler
+    protected function prepareOutputProcessor() {
+        // determine the output handler
         // get accept content types from the client
         $h = getallheaders();
         if (array_key_exists("Accept", $h)) {
@@ -209,15 +212,18 @@ class Service
 
             foreach ($acp as $ct) {
                 $tmpArray = explode(";", $ct, 2);
-                $act[] = trim(array_shift($ct));
+                $ct = trim(array_shift($tmpArray));
+                if (empty($this->availableOutputTypes) || in_array($ct, $this->availableOutputTypes)) {
+                    $act[] = $ct;
+                }
             }
         }
 
         // TODO sort response types by client preference
 
         // check the available output formats
-        foreach ($act as $ct) {
-            if (array_key_exists($ct, $this->outputContentTypeMap)) {
+        foreach ($act as $contentType) {
+            if (array_key_exists($contentType, $this->outputContentTypeMap)) {
                 $className = $this->outputContentTypeMap[$contentType];
 
                 if (!class_exists($className, true)) {
@@ -232,7 +238,23 @@ class Service
 
         if (!$this->outputHandler) {
             // if we found no handler we use the default handler
-            if (array_key_exists("*/*", $this->outputContentTypeMap)) {
+            $outputType;
+            
+            if (!empty($this->preferredOutputType)) {
+                $outputType = $this->preferredOutputType;
+            }
+
+            if (empty($outputType) && !empty($this->availableOutputTypes)) {
+                $outputType = $this->availableOutputTypes[0];
+            }
+
+            if (empty($outputType) ||
+                !array_key_exists($outputType, $this->outputContentTypeMap))
+            {
+                $outputType = "*/*";
+            }
+
+            if (array_key_exists($outputType, $this->outputContentTypeMap)) {
                 $className = $this->outputContentTypeMap[$contentType];
 
                 if (!class_exists($className, true)) {
@@ -283,8 +305,7 @@ class Service
             }
         }
 
-        if (!empty($this->error) &&
-            $this->model->hasData()) {
+        if ($this->model->hasData()) {
             // stream the output
             while ($this->model->hasData()) {
                 $this->outputHandler->send($this->model->getData());
@@ -388,6 +409,9 @@ class Service
 
             $this->outputHandler->setErrorMessage($this->error);
             $this->outputHandler->setTraceback($this->model->getAllErrors());
+            if ($this->model->hasData()) {
+                $this->outputHandler->addTraceback("data", $this->model->getData());
+            }
         }
         elseif (!$this->model->hasData()) {
             $this->responseCode = 204;
