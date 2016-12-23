@@ -6,11 +6,9 @@ class Base {
     private $input;
     private $query;
     private $queryString;
-    private $headerParameters = [];
     private $cookieParameters = [];
     private $pathParameters   = [];
     private $headerParameters = [];
-    private $cookieParameters = [];
 
     private $isMulti = false;
 
