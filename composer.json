@@ -13,9 +13,9 @@
     "require": {
         "php": ">=5.5.0",
         "spomky-labs/jose": "^6.1",
-        "league/json-guard":  ""
+        "league/json-guard":  "*"
     },
     "require-dev": {
         "phpunit/phpunit" : "4.*"
-    },
+    }
 }
