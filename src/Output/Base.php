@@ -18,7 +18,10 @@ class Base {
         header('Cache-Control: no-cache');  // forbid caching
     }
 
-    public function getStatusCode() {
+    public function getStatusCode($code = "") {
+        if (!empty($code)) {
+            $this->statusCode = $code;
+        }
         http_response_code($this->statusCode);
     }
 

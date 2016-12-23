@@ -38,13 +38,14 @@ class Service
         "*/*"                                => "RESTling\\Output\\Base"
                               ];
 
-    private $error;
-    private $operation;
+    protected $error;
+    protected $operation;
 
     private $corsHosts = [];
 
     protected $preferredOutputType;
     protected $availableOutputTypes = [];
+    protected $path_info = "";
 
     public function __construct() {}
 
@@ -57,11 +58,12 @@ class Service
     }
 
     final public function addCORSHost($host, $aMethods) {
-        // host can be an array. The methods are an array too. Note that this is not associative and
-        // that the methods are allowed for the provided hosts.
+        // host can be an array. The methods are an array too. Note that this is
+        // not associative and that the methods are allowed for the provided
+        // hosts.
         if (gettype($aMethods) === 'string')
         {
-            $methods = explode(" ", $methods);
+            $aMethods = explode(" ", $aMethods);
         }
 
         $methods = [];
@@ -92,17 +94,26 @@ class Service
     }
 
     final public function addInputContentTypeMap($contentType, $handlerType) {
-        if (gettype($contentType) == "string" && gettype($handlerType) == "string") {
+        if (gettype($contentType) == "string" &&
+            gettype($handlerType) == "string")
+        {
             $this->inputContentTypeMap[$contentType] = $handlerType;
         }
     }
 
     final public function addOutputContentTypeMap($contentType, $handlerType) {
-        if (gettype($contentType) == "string" && gettype($handlerType) == "string") {
+        if (gettype($contentType) == "string" &&
+            gettype($handlerType) == "string")
+        {
             $this->outputContentTypeMap[$contentType] = $handlerType;
         }
     }
 
+    /**
+     * @public @method run();
+     *
+     * The run() method implements the core request processing.
+     */
     final public function run() {
 
         $fLoop = [
@@ -130,7 +141,7 @@ class Service
         $this->processResponse();
     }
 
-    private function hasModel() {
+    protected function hasModel() {
         if (!$this->model) {
             $this->error = "No_Model";
         }
@@ -187,11 +198,15 @@ class Service
         }
     }
 
-    protected function performOperation() {
-        if (!method_exists($this->model, $this->operation)) {
+    private function performOperation() {
+        if (!$this->model &&
+            !method_exists($this->model, $this->operation))
+        {
             $this->error = "Not Implemented";
             return;
         }
+
+        $this->model->setInput($this->inputHandler);
 
         try {
             $this->error = call_user_func(array($this->model,
@@ -213,7 +228,8 @@ class Service
             foreach ($acp as $ct) {
                 $tmpArray = explode(";", $ct, 2);
                 $ct = trim(array_shift($tmpArray));
-                if (empty($this->availableOutputTypes) || in_array($ct, $this->availableOutputTypes)) {
+                if (empty($this->availableOutputTypes) ||
+                    in_array($ct, $this->availableOutputTypes)) {
                     $act[] = $ct;
                 }
             }
@@ -239,12 +255,15 @@ class Service
         if (!$this->outputHandler) {
             // if we found no handler we use the default handler
             $outputType;
-            
-            if (!empty($this->preferredOutputType)) {
+
+            if (!empty($this->preferredOutputType))
+            {
                 $outputType = $this->preferredOutputType;
             }
 
-            if (empty($outputType) && !empty($this->availableOutputTypes)) {
+            if (empty($outputType) &&
+                !empty($this->availableOutputTypes))
+            {
                 $outputType = $this->availableOutputTypes[0];
             }
 
@@ -268,14 +287,23 @@ class Service
     }
 
     protected function processResponse() {
+        // prepare out put after error handling
+        if (!empty($this->error)) {
+            $this->outputHandler->setErrorMessage($this->error);
+            $this->outputHandler->setTraceback($this->model->getAllErrors());
+            if ($this->model->hasData()) {
+                $this->outputHandler->addTraceback("data", $this->model->getData());
+            }
+        }
+
         // generate headers
 
         // TODO Partial Content
         // TODO Mutlipart Content
-
-        $this->outputHandler->getStatusCode();
+        $this->outputHandler->getStatusCode($this->responseCode);
         $this->outputHandler->getContentType();
 
+        // CORS handling
         if (!empty($this->corsHosts) &&
             array_key_exists('HTTP_REFERRER', $_SERVER)) {
             $origin = '';
@@ -406,12 +434,6 @@ class Service
                     $this->responseCode = 400;
                     break;
             }
-
-            $this->outputHandler->setErrorMessage($this->error);
-            $this->outputHandler->setTraceback($this->model->getAllErrors());
-            if ($this->model->hasData()) {
-                $this->outputHandler->addTraceback("data", $this->model->getData());
-            }
         }
         elseif (!$this->model->hasData()) {
             $this->responseCode = 204;
@@ -419,7 +441,6 @@ class Service
         else {
             $this->responseCode = 200;
         }
-        $this->outputHandler->setStatusCode($this->responseCode);
     }
 }
 

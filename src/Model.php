@@ -3,8 +3,14 @@ namespace RESTling;
 
 abstract class Model {
     protected $data;
+    protected $input;
 
-    public function __construct(){}
+    public function __construct(){
+    }
+
+    public function setInput($inputObject) {
+        $this->input = $inputObject;
+    }
 
     public function getHeaders() {
         return [];
