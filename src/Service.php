@@ -179,7 +179,7 @@ class Service
 
     protected function verifyAccess() {
         if ($this->securityHandler &&
-            !$this->securityHandler->verifyAuthorization()) {
+            !$this->securityHandler->verifyAccess()) {
             $this->error = "Forbidden";
         }
     }
