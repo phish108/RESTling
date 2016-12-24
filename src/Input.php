@@ -128,7 +128,7 @@ class Input {
         return false;
     }
 
-    public function hasParameterWithSchema($pname, $source, $schema) {
+    public function hasParameterSchema($pname, $source, $schema) {
         $sources = ["query", "body", "cookie", "path", "header"];
 
         if (!empty($source) && in_array($source, $sources)) {
@@ -138,11 +138,11 @@ class Input {
         if ($this->hasParameter($pname, $sources)) {
             $validator = new JSONValidator($data, $schema);
 
-            if ($validator->passes()) {
-                return true;
+            if ($validator->fails()) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     public function parse() {

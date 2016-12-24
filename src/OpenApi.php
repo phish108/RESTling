@@ -175,37 +175,52 @@ class OpenAPI extends Service {
         }
 
         // filter the security requirements for the method
-        if (array_key_exists("security", $this->activeMethod) &&
-            !empty($this->activeMethod["security"])) {
-            if (!array_key_exists("components", $this->config)) {
+        if (!array_key_exists("security", $this->activeMethod) ||
+            empty($this->activeMethod["security"])) {
+            throw new Exception('Missing Security Requirements');
+        }
+
+        if (!array_key_exists("components", $this->config)) {
+            throw new Exception('Missing Security Definitions');
+        }
+
+        foreach ($this->activeMethod['security'] as $sec => $scopes) {
+            // note multiple security requirements may exist
+            // NONE of these requirements must reject the authorization and access.
+            // different security handers may reject either one.
+
+            if (!array_key_exists($sec, $this->config["components"])) {
                 throw new Exception('Missing Security Definitions');
             }
-            foreach ($this->activeMethod['security'] as $sec => $scopes) {
-                // note multiple security requirements may exist
-                // NONE of these requirements must reject the authorization and access.
-                // different security handers may reject either one.
-                if (!array_key_exists($sec, $this->config["components"])) {
-                    throw new Exception('Missing Security Requirement Undefined');
-                }
-                if (!array_key_exists("type", $this->config["components"][$sec])) {
-                    throw new Exception('Bad Security Requirements Reference');
-                }
 
-                $type = $this->config["components"][$sec]["type"];
-                if (in_array($type, ["apiKey", "http", "oauth2", "openIdConnect"])) {
-                    throw new Exception('Invalid Security Definition Type');
-                }
-
-                $type = "\\RESTling\\Validator\\Security\\" . ucfirst($type);
-                try {
-                    $secHandler = new $type($this->config["components"][$sec]);
-                }
-                catch (Exception $err) {
-                    throw new Exception('Security Handler Not Found');
-                }
-                $secHandler->setScopeRequirements($this->activeMethod['security'][$sec]);
-                $this->addSecurityHandler($secHandler);
+            if (empty($scopes)) {
+                throw new Exception('Missing Security Requirements');
             }
+
+            if (!array_key_exists("type", $this->config["components"][$sec])) {
+                throw new Exception('Bad Security Requirements Reference');
+            }
+
+            $type = $this->config["components"][$sec]["type"];
+            if (in_array($type, ["apiKey", "http", "oauth2", "openIdConnect"])) {
+                throw new Exception('Invalid Security Definition Type');
+            }
+
+            $type = "\\RESTling\\Validator\\Security\\" . ucfirst($type);
+
+            if (!class_exists($type, true)) {
+                throw new Exception('Security Handler Not Found');
+            }
+
+            try {
+                $secHandler = new $type($this->config["components"][$sec]);
+            }
+            catch (Exception $err) {
+                throw new Exception('Security Handler Broken');
+            }
+
+            $secHandler->setScopeRequirements($scopes);
+            $this->addSecurityHandler($secHandler);
         }
 
         // filter possible output types
@@ -249,14 +264,12 @@ class OpenAPI extends Service {
                     throw new Exception("Required Parameter Missing");
                 }
 
-                if (array_key_exists("schema", $param)) {
-                    // TODO verify via schema
+                if (array_key_exists("schema", $param) &&
+                    !$this->inputHandler->hasParameterSchema($param["name"], $param["in"], $param["schema"])) {
+                    throw new Exception("Invalid Parameter Format");
                 }
             }
         }
-    }
-
-    protected function verifyAccess(){
     }
 
     protected function getAllowedMethods()

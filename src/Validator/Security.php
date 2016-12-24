@@ -46,6 +46,7 @@ abstract class Security implements \RESTling\Validator {
         return null;
     }
 
+    // accepts a list of scopes that are acceptable for the security scheme
     public function setScopeRequirements($scopes) {
         if (!is_array($scopes) || empty($scopes)) {
             throw new Exception("Missing Scope Requirements");
@@ -55,11 +56,23 @@ abstract class Security implements \RESTling\Validator {
     }
 
     // for authorization
-    abstract public function willValidate();
-    abstract public function validate();
+    public function willValidate() {
+        return false;
+    }
 
-    // for access (scope)
-    abstract public function verify();
+    abstract public function validate($model);
+
+    // for access (tests if scopes are accepted)
+    public function verify($model) {
+        if (!empty($scopes)) {
+            if (!$model || !method_exists($model, "verifyScope")) {
+                throw new Exception("Scope Verification Not Supported");
+            }
+            foreach ($this->scopes as $scope) {
+                $model->verifyScope($scope);
+            }
+        }
+    }
 }
 
 ?>

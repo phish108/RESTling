@@ -2,7 +2,7 @@
 namespace RESTling;
 
 interface Validator {
-    public function validate();
+    public function validate($model);
 }
 
 ?>

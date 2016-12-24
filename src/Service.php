@@ -242,14 +242,14 @@ class Service
     /**
      *
      */
-    protected function verifyAuthorization() {
+    private function verifyAuthorization() {
         if (!empty($this->securityHandler)) {
             $validation = false;
 
             foreach ($this->securityHandler as $handler) {
-                if ($handler->willVaidate()) {
+                if ($handler->willValidate()) {
                     $validation = true;
-                    $handler->validate();
+                    $handler->validate($this->model);
                 }
             }
 
@@ -302,10 +302,23 @@ class Service
     }
 
     /**
+     * Allows each security handler to process its scope requirements with
+     * the model.
      *
+     * If a security handler does not verify a scope, it MUST throw an
+     * exception.
      */
-    protected function verifyAccess() {
-
+    private function verifyAccess() {
+        if (!empty($this->securityHandler)) {
+            try {
+                foreach ($this->securityHandler as $handler) {
+                    $handler->verify($this->model);
+                }
+            }
+            catch (Exception $err) {
+                throw new Exception('Forbidden');
+            }
+        }
     }
 
     /**

@@ -29,34 +29,40 @@ class Http extends \RESTling\Validator\Security\OpenAPI {
         return false;
     }
 
-    public function validate() {
-        call_user_func(array($this, 'validate_' . $this->type));
+    public function validate($model) {
+        call_user_func(array($this, 'validate_' . $this->type), $model);
     }
 
-    protected function validate_bearer() {
+    protected function validate_bearer($model) {
+        if (!empty($this->token)) {
+            // call the model
+            if (!$model || !method_exists($model, "validateToken")) {
+                throw new Exception("Token Validation Not Supported");
+            }
+
+            $model->validateToken($this->token);
+        }
+    }
+
+    protected function validate_jwt($model) {
         throw new Exception("Not Implemented");
     }
 
-    protected function validate_jwt() {
+    protected function validate_basic($model) {
         throw new Exception("Not Implemented");
     }
 
-    protected function validate_basic() {
+    protected function validate_digest($model) {
         throw new Exception("Not Implemented");
     }
 
-    protected function validate_digest() {
+    protected function validate_hoba($model) {
         throw new Exception("Not Implemented");
     }
 
-    protected function validate_hoba() {
+    protected function validate_scram($model) {
         throw new Exception("Not Implemented");
     }
-    
-    protected function validate_scram() {
-        throw new Exception("Not Implemented");
-    }
-
 }
 
 ?>
