@@ -8,8 +8,8 @@ class JSON extends \RESTling\Output {
         $this->contentType = "application/json";
     }
 
-        public function setContentType($ct) {
-        }
+    public function setContentType($ct) {
+    }
 
     public function data($data) {
         if(is_array($data) || is_object($data)) {
