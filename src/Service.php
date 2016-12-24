@@ -280,13 +280,11 @@ class Service
                 }
 
                 $this->inputHandler = new $className();
-                $this->error = $this->inputHandler->parse();
-            }
-            else {
-                $this->inputHandler = new BaseParser();
+                $this->inputHandler->parse();
             }
         }
-        else {
+
+        if (!$this->inputHandler) {
             $this->inputHandler = new BaseParser();
         }
     }
