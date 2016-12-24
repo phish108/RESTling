@@ -7,10 +7,10 @@ use RESTling\Output\Base as BaseResponder;
 
 class Service
 {
-    protected $model;
+    private $model;
     protected $inputHandler;
     private   $outputHandler;
-    private   $securityHandler;
+    private   $securityHandler = [];
 
     private $responseCode = 200;
 
@@ -47,17 +47,90 @@ class Service
     protected $availableOutputTypes = [];
     protected $path_info = "";
 
+    /**
+     * @public constructor()
+     *
+     * instantiates the service class. It performs no other operation.
+     */
     public function __construct() {}
 
-    final public function setModel($m) {
+    /**
+     * @final @public @method setModel($model[, $secure])
+     * @parameter RESTling\Model $model
+     * @parameter @optional bool $secure, @default false
+     *
+     * Sets the handler model.
+     *
+     * @throws Exception "Not a RESTling\Model"
+     *
+     * @throws Exception "Model Already Set"
+     * If secure validates to true, then this method will throw an Exception if
+     * the model is already set.
+     */
+    final public function setModel($m, $secure = false) {
+        if ($secure && $this->model) {
+            throw new Exception("Model already set");
+        }
+        if (!($m && $m instanceof \RESTling\Model)) {
+            throw new Exception("Not a RESTling\\Model");
+        }
         $this->model = $m;
     }
 
-    final public function setSecurityHandler($h) {
-        $this->securityHandler = $h;
+    /**
+     * @final @protected @function bool hasModel()
+     * returns bool
+     *
+     * This function allows to check if a model is present. Returns true if a
+     * model is set.
+     */
+    final protected function hasModel() {
+        return ($this->model && $this->model instanceof \RESTling\Model);
     }
 
+    /**
+     * @final @protected @function bool noModel()
+     *
+     * Inverse of hasModel().
+     */
+     final protected function noModel() {
+         return (!$this->hasModel());
+     }
+
+    /**
+     * @final @public @method setSecurityHandler($handler)
+     * @parameter \RESTling\Validator $handler
+     *
+     * Sets the security validator.
+     *
+     * @throws Exception "Not a RESTling\Validator\\Security"
+     */
+    final public function addSecurityHandler($h) {
+        if (!($h && $h instanceof \RESTling\Validator\Security)) {
+            throw new Exception("Not a RESTling\\Validator\\Security");
+        }
+        $this->securityHandler[] = $h;
+    }
+
+    /**
+     * @final @public @method addCORSHost($host, $methods)
+     * @parameter mixed $host
+     * @parameter mixed $methods
+     *
+     * Interface to Cross Origin Resource Sharing (CORS) handling.
+     *
+     * This function allows to specify, which referring sites can access this
+     * service.
+     *
+     * Both parameters can be either strings or arrays.
+     *
+     * @throws Exception 'Invalid CORS Parameter', if parameters are of invalid type.
+     */
     final public function addCORSHost($host, $aMethods) {
+        if (!((is_string($host) || is_array($host)) &&
+              (is_string($aMethods) || is_array($aMethods)))) {
+            throw new Exception("Invalid CORS Parameter");
+        }
         // host can be an array. The methods are an array too. Note that this is
         // not associative and that the methods are allowed for the provided
         // hosts.
@@ -93,6 +166,9 @@ class Service
         }
     }
 
+    /**
+     *
+     */
     final public function addInputContentTypeMap($contentType, $handlerType) {
         if (gettype($contentType) == "string" &&
             gettype($handlerType) == "string")
@@ -101,6 +177,9 @@ class Service
         }
     }
 
+    /**
+     *
+     */
     final public function addOutputContentTypeMap($contentType, $handlerType) {
         if (gettype($contentType) == "string" &&
             gettype($handlerType) == "string")
@@ -117,11 +196,10 @@ class Service
     final public function run() {
 
         $fLoop = [
-            "hasModel",
+            "verifyModel",
             "findOperation",
-            "verifyAuthorization",
-            "validateMethod",
             "parseInput",
+            "verifyAuthorization",
             "validateInput",
             "validateParameter",
             "verifyAccess",
@@ -131,9 +209,11 @@ class Service
 
         if (empty($this->error)) {
             foreach ($fLoop as $func) {
-                call_user_func(array($this, $func));
-
-                if (!empty($this->error)) {
+                try {
+                    call_user_func(array($this, $func));
+                }
+                catch (Exception $err) {
+                    $this->error = $err->getMessage();
                     break;
                 }
             }
@@ -143,23 +223,45 @@ class Service
         $this->processResponse();
     }
 
-    protected function hasModel() {
-        if (!$this->model) {
-            $this->error = "No_Model";
+    /**
+     * @protected @function
+     */
+    protected function verifyModel() {
+        if ($this->noModel()) {
+            throw new Exception("No_Model");
         }
     }
 
+    /**
+     *
+     */
     protected function findOperation() {
         $this->operation = strtolower($_SERVER["REQUEST_METHOD"]);
     }
 
+    /**
+     *
+     */
     protected function verifyAuthorization() {
-        if ($this->securityHandler &&
-            !$this->securityHandler->verifyAuthorization()) {
-            $this->error = "Authorization Required";
+        if (!empty($this->securityHandler)) {
+            $validation = false;
+
+            foreach ($this->securityHandler as $handler) {
+                if ($handler->willVaidate()) {
+                    $validation = true;
+                    $handler->validate();
+                }
+            }
+
+            if (!$validation) {
+                throw new Exception("Authorization Required");
+            }
         }
     }
 
+    /**
+     *
+     */
     protected function parseInput() {
         $method = $_SERVER["REQUEST_METHOD"];
 
@@ -173,8 +275,7 @@ class Service
                 $className = $this->inputContentTypeMap[$contentType];
 
                 if (!class_exists($className, true)) {
-                    $this->error = "Missing_Content_Parser";
-                    return;
+                    throw new Exception("Missing_Content_Parser");
                 }
 
                 $this->inputHandler = new $className();
@@ -189,36 +290,46 @@ class Service
         }
     }
 
-    protected function validateMethod()    {}
-    protected function validateInput()     {}
-    protected function validateParameter() {}
+    /**
+     *
+     */
+    protected function validateInput()     {
+    }
 
+    /**
+     *
+     */
+    protected function validateParameter() {
+    }
+
+    /**
+     *
+     */
     protected function verifyAccess() {
         if ($this->securityHandler &&
             !$this->securityHandler->verifyAccess()) {
-            $this->error = "Forbidden";
+            throw new Exception("Forbidden");
         }
     }
 
+    /**
+     *
+     */
     private function performOperation() {
-        if (!$this->model &&
-            !method_exists($this->model, $this->operation))
-        {
-            $this->error = "Not Implemented";
-            return;
+        if ($this->noModel() ||
+            !method_exists($this->model, $this->operation)) {
+            throw new Exception("Not Implemented");
         }
 
         $this->model->setInput($this->inputHandler);
 
-        try {
-            $this->error = call_user_func(array($this->model,
-                                                $this->operation));
-        }
-        catch (Exception $err) {
-            $this->error = $err->getMessage();
-        }
+        call_user_func(array($this->model,
+                             $this->operation));
     }
 
+    /**
+     *
+     */
     protected function prepareOutputProcessor() {
         // determine the output handler
         // get accept content types from the client
@@ -245,8 +356,7 @@ class Service
                 $className = $this->outputContentTypeMap[$contentType];
 
                 if (!class_exists($className, true)) {
-                    $this->error = "Missing_Output_Processor";
-                    return;
+                    throw new Exception("Missing_Output_Processor");
                 }
 
                 $this->outputHandler = new $className();
@@ -279,8 +389,7 @@ class Service
                 $className = $this->outputContentTypeMap[$contentType];
 
                 if (!class_exists($className, true)) {
-                    $this->error = "Missing_Output_Processor";
-                    return;
+                    throw new Exception("Missing_Output_Processor");
                 }
 
                 $this->outputHandler = new $className();
@@ -288,6 +397,9 @@ class Service
         }
     }
 
+    /**
+     *
+     */
     protected function processResponse() {
         // prepare out put after error handling
         if (!empty($this->error)) {
@@ -331,14 +443,14 @@ class Service
         }
 
         // get additional model headers
-        if ($this->model &&
+        if ($this->hasModel() &&
             !empty($headers = $this->model->getHeaders())) {
             foreach ($headers as $headername => $headervalue) {
                 header($headername . ": " . $headervalue);
             }
         }
 
-        if ($this->model &&
+        if ($this->hasModel() &&
             $this->model->hasData()) {
             // stream the output
             while ($this->model->hasData()) {
@@ -350,10 +462,16 @@ class Service
         $this->outputHandler->finish();
     }
 
+    /**
+     *
+     */
     protected function getAllowedMethods() {
         return [];
     }
 
+    /**
+     *
+     */
     protected function handleError() {
         if(!$this->outputHandler) {
             $this->outputHandler = new BaseResponder();
@@ -361,16 +479,6 @@ class Service
 
         if (!empty($this->error)) {
             switch ($this->error) {
-                case "No_Model":
-                case "Missing_Output_Processor":
-                case "Invalid Body Parameter":
-                case "Invalid Path Parameter":
-                case "Invalid Query Parameter":
-                case "Invalid Header Parameter":
-                case "Invalid Cookie Parameter":
-                case "Bad Request":
-                    $this->responseCode = 400;
-                    break;
                 case "Missing_Content_Parser":
                     $this->responseCode = 415;
                     break;
@@ -441,7 +549,7 @@ class Service
                     break;
             }
         }
-        elseif ($this->model && !$this->model->hasData()) {
+        elseif ($this->hasModel() && !$this->model->hasData()) {
             $this->responseCode = 204;
         }
         else {
