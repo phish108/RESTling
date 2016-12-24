@@ -2,12 +2,12 @@
 
 namespace RESTling\Input;
 
-class MultiPartForm extends Base {
+class MultiPartForm extends \RESTling\Input {
 
     public function parse() {
 
         if (empty($_POST)) {
-            return "Empty_Input_Data";
+            throw new Exception("Empty_Input_Data");
         }
 
         $this->bodyParameters = $_POST;

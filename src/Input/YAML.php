@@ -2,19 +2,19 @@
 
 namespace RESTling\Input;
 
-class YAML extends Base {
+class YAML extends \RESTling\Input {
 
     public function parse() {
         $data = trim(file_get_contents("php://input"));
 
         if (empty($data)) {
-            return "Empty_Input_Data";
+            throw new Exception("Empty_Input_Data");
         }
         try {
             $this->bodyParameters = \yaml_parse($data);
         }
         catch (Exception $err) {
-            return "Broken_Input_Data";
+            throw new Exception("Broken_Input_Data");
         }
         return "";
     }

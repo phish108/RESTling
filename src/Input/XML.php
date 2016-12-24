@@ -2,11 +2,10 @@
 
 namespace RESTling\Input;
 
-class XML extends Base {
+class XML extends \RESTling\Input {
 
     public function parse() {
-        return "NOT_SUPPORTED";
-        return "";
+        throw new Exception("NOT_SUPPORTED");
     }
 }
 
