@@ -235,6 +235,27 @@ class OpenAPI extends Service {
         }
     }
 
+    protected function validateParameter() {
+        if (array_key_exists("parameters", $this->activeMethod)) {
+            $params = $this->expandObject($this->activeMethod["parameters"]);
+
+            foreach ($params as $param) {
+                if (!(array_key_exists("name", $param) || array_key_exists("in", $param))) {
+                    throw new Exception("Invalid Parameter Object");
+                }
+                if (array_key_exists("required", $param) &&
+                    !$this->inputHandler->hasParameter($param["name"], $param["in"])) {
+
+                    throw new Exception("Required Parameter Missing");
+                }
+
+                if (array_key_exists("schema", $param)) {
+                    // TODO verify via schema
+                }
+            }
+        }
+    }
+
     protected function verifyAccess(){
     }
 
