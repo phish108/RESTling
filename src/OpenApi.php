@@ -269,11 +269,11 @@ class OpenAPI extends Service {
                     case "summary":
                     case "description":
                     case "parameters":
-                    next;
-                    break;
+                        next;
+                        break;
                     default:
-                    $retval[] = strtoupper($key);
-                    break;
+                        $retval[] = strtoupper($key);
+                        break;
                 }
             }
             return $retval;
