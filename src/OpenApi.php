@@ -5,49 +5,73 @@ namespace RESTling;
 class OpenAPI extends Service {
 
     /** ***********************************************
-     *
-     */
+    * Properties
+    */
 
-    private $orderedPaths = [];
-    private $pathMap;
-    private $activePath;
-    private $activeMethod;
-    private $pathParameters = [];
+    private $orderedPaths = []; ///< helper for request path discovery
+    private $pathMap;           ///< helper for operation mapping
+    private $activePath;        ///< helper for request handling
+    private $activeMethod;      ///< helper for request handling
+    private $pathParameters = []; ///< helper to pass path parameters to the inputHandler
 
-    private $config;
+    private $config;            ///< keeps the OpenAPI configuration
 
+    /**
+    * @protected @method loadTagModel($taglist)
+    * @parameter array $taglist
+    *
+    * The $taglist contains all tag names of the service tags. This is used
+    * for determinating a namespaced model. The core function implements
+    * naïve namespacing and relies on autoloading.
+    *
+    * This method will not overwrite an existing model.
+    *
+    * @throws Exception 'Model already set'
+    * @throws Exception 'Not a RESTling\\Model'
+    */
     protected function loadTagModel($taglist) {
-        if ($this->model) {
-            return;
-        }
-        
         // naive namespacing
         $modelName = '\\' . join('\\', $taglist);
 
         if (class_exists($modelName, true)) {
-            $this->model = new $modelName();
+            $this->setModel(new $modelName(), true);
         }
     }
 
+    /**
+    * @protected @method loadTitleModel($modelName)
+    * @parameter string $modelName
+    *
+    * The $modelName contains a camel-cased Classname based on the service
+    * title found in the info section of the service specification. If the
+    * Classname exists, then this function will use the class as a model.
+    *
+    * This method will not overwrite an existing model.
+    *
+    * @throws Exception 'Model already set'
+    * @throws Exception 'Not a RESTling\\Model'
+    */
     protected function loadTitleModel($modelName) {
-        if ($this->model) {
-            return;
-        }
-
         $fqModelName = '\\' . $modelName;
         if (class_exists($fqModelName, true)) {
-            $this->model = new $fqModelName();
+            $this->setModel(new $fqModelName(), true);
         }
     }
 
     /** ***********************************************
-     * Core Run Methods
-     */
-    protected function hasModel()
+    * Core Run Methods
+    */
+
+    /**
+    * @protected @method verifyModel()
+    *
+    * Overridden version that includes dynamic model detection.
+    */
+    protected function verifyModel()
     {
         // load tag model
         if (array_key_exists('tags',$this->config) &&
-            !empty($this->config['tags'])) {
+        !empty($this->config['tags'])) {
 
             $tl = [];
             foreach ($this->config["tags"] as $tag) {
@@ -66,9 +90,27 @@ class OpenAPI extends Service {
         }
 
         // verify the model is present
-        parent::hasModel();
+        return parent::verifyModel();
     }
 
+    /**
+    * @protected @method findOperation()
+    *
+    * Overridden version that includes path mapping.
+    *
+    * If a path is matched for a request, this method will verify that
+    * the service specifies a function for the current REQUEST_METHOD.
+    * For valid requests, this method checks if the service specifies an
+    * operationId for the model. In the case that no operationId is present
+    * this method will dynamically assume a operationId based on the
+    * REQUEST_METHOD and the matched path.
+    * The dynamic operationId will start with a lowercased request method
+    * that is followed by a camel-cased path. The casing will be at the
+    * path boundaries and at '-', '_', and '.' characters.
+    *
+    * Example: for GET /user/{userid}/product-info the following operationId
+    * will be generated: ```getUserUseridProductInfo```.
+    */
     protected function findOperation()
     {
         if (array_key_exists("PATH_INFO", $_SERVER)) {
@@ -103,16 +145,14 @@ class OpenAPI extends Service {
         }
 
         if (!$this->activePath) {
-            $this->error = "Bad Request";
-            return;
+            throw new Exception("Bad Request");
         }
 
         // verify method for path
         $m = strtolower($_SERVER['REQUEST_METHOD']);
 
         if (!array_key_exists($m, $this->activePath)) {
-            $this->error = "Not Allowed";
-            return;
+            throw new Exception("Not Allowed");
         }
 
         $this->activeMethod = $this->expandObject($this->activePath[$m]);
@@ -125,13 +165,47 @@ class OpenAPI extends Service {
             // generate a generic Operation name
             // will generate a operation id as 'getFooBarBaz'
             $op = $m;
-            $p = explode("/", $pathObject["path"]);
+            $p = explode("/-_.", $pathObject["path"]);
             foreach ($p as $nPart) {
                 // trim path templating
                 $nPart = trim($nPart, '\{\}');
                 $op .= ucfirst(strtolower($nPart));
             }
             $this->operation = $op;
+        }
+
+        // filter the security requirements for the method
+        if (array_key_exists("security", $this->activeMethod) &&
+            !empty($this->activeMethod["security"])) {
+            if (!array_key_exists("components", $this->config)) {
+                throw new Exception('Missing Security Definitions');
+            }
+            foreach ($this->activeMethod['security'] as $sec => $scopes) {
+                // note multiple security requirements may exist
+                // NONE of these requirements must reject the authorization and access.
+                // different security handers may reject either one.
+                if (!array_key_exists($sec, $this->config["components"])) {
+                    throw new Exception('Missing Security Requirement Undefined');
+                }
+                if (!array_key_exists("type", $this->config["components"][$sec])) {
+                    throw new Exception('Bad Security Requirements Reference');
+                }
+
+                $type = $this->config["components"][$sec]["type"];
+                if (in_array($type, ["apiKey", "http", "oauth2", "openIdConnect"])) {
+                    throw new Exception('Invalid Security Definition Type');
+                }
+
+                $type = "\\RESTling\\Validator\\Security\\" . ucfirst($type);
+                try {
+                    $secHandler = new $type($this->config["components"][$sec]);
+                }
+                catch (Exception $err) {
+                    throw new Exception('Security Handler Not Found');
+                }
+                $secHandler->setScopeRequirements($this->activeMethod['security'][$sec]);
+                $this->addSecurityHandler($secHandler);
+            }
         }
 
         // filter possible output types
@@ -148,19 +222,21 @@ class OpenAPI extends Service {
         }
     }
 
-    protected function verifyAuthorization()
-    {}
-
     protected function parseInput()
     {
         parent::parseInput();
         if ($this->inputHandler) {
             $this->inputHandler->setPathParameters($this->pathParameters);
+            if (!empty($this->securityHandler)) {
+                foreach ($this->securityHandler as $handler) {
+                    $handler->setInput($this->inputHandler);
+                }
+            }
         }
     }
 
-    protected function verifyAccess()
-    {}
+    protected function verifyAccess(){
+    }
 
     protected function getAllowedMethods()
     {
@@ -172,11 +248,11 @@ class OpenAPI extends Service {
                     case "summary":
                     case "description":
                     case "parameters":
-                        next;
-                        break;
+                    next;
+                    break;
                     default:
-                        $retval[] = strtoupper($key);
-                        break;
+                    $retval[] = strtoupper($key);
+                    break;
                 }
             }
             return $retval;
@@ -185,252 +261,281 @@ class OpenAPI extends Service {
     }
 
     /** ***********************************************
-     * Open API functions
-     */
-     public function loadConfigFile($fqfn) {
-         if (empty($fqfn)) {
-             $this->error = "OpenAPI Config File Missing";
-             return;
-         }
+    * Open API functions
+    */
 
-         if (!file_exists($fqfn)) {
-             $this->error = "OpenAPI Config File Not Found";
-             return;
-         }
+    public function loadConfigFile($fqfn) {
+        try {
+            $this->_loadConfigFile($fqfn);
+        }
+        catch (Exception $err) {
+            $this->error = $err->getMessage();
+        }
+    }
 
-         try {
-             $cfgString = file_get_contents($fqfn);
-         }
-         catch (Exception $e) {
-             $this->error = "OpenAPI Config File Broken";
-             return;
-         }
+    public function loadConfigString($cfgString) {
+        try {
+            $this->_loadConfigString($cfgString);
+        }
+        catch (Exception $err) {
+            $this->error = $err->getMessage();
+        }
+    }
 
-         $this->loadConfigString($cfgString);
-     }
+    public function loadApiObject($oaiObject) {
+        try {
+            $this->_loadApiObject($oaiObject);
+        }
+        catch (Exception $err) {
+            $this->error = $err->getMessage();
+        }
+    }
 
-     public function loadConfigString($cfgStr) {
-         if (empty($cfgStr)) {
-             $this->error = "OpenAPI Configuration Empty";
-             return;
-         }
-
-         try {
-             $o = json_decode($cfgStr, true);
-         }
-         catch (Exception $e) {
-             try {
-                 $o = yaml_parse($cfgStr);
-             }
-             catch(Exception $e2) {
-                 $this->error = "OpenAPI Configuration Broken";
-             }
-         }
-
-        if (empty($o)) {
-            $this->error = "OpenAPI Configuration Invalid";
-            return;
+    private function _loadConfigFile($fqfn) {
+        if (empty($fqfn)) {
+            throw new Exception("OpenAPI Config File Missing");
         }
 
-        $this->loadApiObject($o);
-     }
+        if (!file_exists($fqfn)) {
+            throw new Exception("OpenAPI Config File Not Found");
+        }
 
-     /**
-      * @private @method loadApiObject($oaiObj)
-      */
-      private function loadApiObject($oaiObject) {
-          try {
-              $this->_loadApiObject($oaiObject);
-          }
-          catch (Exception $err) {
-              $this->error = $err->getMessage();
-          }
-      }
+        try {
+            $cfgString = file_get_contents($fqfn);
+        }
+        catch (Exception $e) {
+            throw new Exception("OpenAPI Config File Broken");
+        }
 
-      private function _loadApiObject($oaiObject) {
-          if (!is_array($oaiObject)) {
-              throw new Exception("Invalid Configuration Object");
-          }
+        $this->_loadConfigString($cfgString);
+    }
 
-          if (empty($oaiObject) ||
-              !array_key_exists("openapi", $oaiObject) ||
-              empty($oaiObject["openapi"])) {
-              throw new Exception("OpenAPI Verion Missing");
-          }
+    private function _loadConfigString($cfgStr) {
+        if (empty($cfgStr)) {
+            throw new Exception("OpenAPI Configuration Empty");
+        }
 
-          $version = explode(".",  $oaiObject["openapi"]);
-          if (count($version) != 3) {
-              throw new Exception("OpenAPI Version Invalid");
-          }
+        try {
+            $o = json_decode($cfgStr, true);
+        }
+        catch (Exception $e) {
+            try {
+                $o = yaml_parse($cfgStr);
+            }
+            catch(Exception $e2) {
+                throw new Exception("OpenAPI Configuration Broken");
+            }
+        }
 
-          if ($version[0] < 3) {
-              throw new Exception("OpenAPI Version Unsupported");
-          }
+        if (empty($o)) {
+            throw new Exception("OpenAPI Configuration Invalid");
+        }
 
-          if (!array_key_exists("info", $oaiObject)){
-              throw new Exception("OpenAPI Info Missing");
-          }
+        $this->_loadApiObject($o);
+    }
 
-          if (!array_key_exists("paths", $oaiObject) ||
-              empty($oaiObject["paths"])) {
-              throw new Exception("OpenAPI Paths Missing");
-          }
 
-          $this->config = $oaiObject;
-          $this->preprocessPaths($this->config["paths"]);
-      }
+    private function _loadApiObject($oaiObject) {
+        if (!is_array($oaiObject)) {
+            throw new Exception("Invalid Configuration Object");
+        }
 
-     /**
-      * @private @method preprocessPaths()
-      *
-      * This method transforms the templated paths for PREG path detection
-      */
-     private function preprocessPaths($paths) {
-         $this->paths = [];
+        if (empty($oaiObject) ||
+        !array_key_exists("openapi", $oaiObject) ||
+        empty($oaiObject["openapi"])) {
+            throw new Exception("OpenAPI Verion Missing");
+        }
 
-         foreach ($paths as $path => $pathobj) {
-             // translate the path into a regex, and filternames
-             $apath  = explode("/", $path);
-             $rpath  = [];
-             $vnames = [];
+        $version = explode(".",  $oaiObject["openapi"]);
+        if (count($version) != 3) {
+            throw new Exception("OpenAPI Version Invalid");
+        }
 
-             $pathobj = $this->expandObject($pathobj);
+        if ($version[0] < 3) {
+            throw new Exception("OpenAPI Version Unsupported");
+        }
 
-             if (!empty($pathobj)) {
-                 foreach ($apath as $pe) {
-                     $aVarname = [];
-                     if (preg_match("/^\{(.+)\}$/", $pe, $aVarname)) {
-                         $vnames[] = $aVarname[1];
-                         $rpath[]  = '([^\/]+)';
-                     }
-                     else {
-                         $rpath[] = $pe;
-                     }
-                 }
+        if (!array_key_exists("info", $oaiObject)){
+            throw new Exception("OpenAPI Info Missing");
+        }
 
-                 $repath = '/^' . implode('\\/', $rpath) . '(?:\\/(.+))?$/';
+        if (!array_key_exists("paths", $oaiObject) ||
+        empty($oaiObject["paths"])) {
+            throw new Exception("OpenAPI Paths Missing");
+        }
 
-                 $this->pathMap[$repath] = [
-                     "pathitem" => $pathobj,
-                     "vars" => $vnames,
-                     "path" => $path
-                 ];
-             }
-         }
+        $this->config = $oaiObject;
+        $this->preprocessPaths($this->config["paths"]);
+    }
 
-         // speed up the matching
-         $array = [];
-         foreach ($this->pathMap as $pattern => $value) {
-             $array[] = $pattern;
-         }
+    /**
+    * @private @method preprocessPaths()
+    *
+    * This method transforms the templated paths for PREG path detection
+    */
+    private function preprocessPaths($paths) {
+        $this->paths = [];
 
-         usort($array, function ($a,$b){return strlen($b) - strlen($a);});
-         $this->orderedPaths = $array;
-     }
+        foreach ($paths as $path => $pathobj) {
+            // translate the path into a regex, and filternames
+            $apath  = explode("/", $path);
+            $rpath  = [];
+            $vnames = [];
 
-     /**
-      * @private @method $expandedObject = expandObject($object)
-      *
-      * This method expands an OAI object if necessary.
-      */
-      private function expandObject($object) {
-          if (array_key_exists('$ref', $object)) {
-              return $this->followReference($object['$ref']);
-          }
-          return $object;
-      }
+            $pathobj = $this->expandObject($pathobj);
 
-     /**
-      * followReference($reference)
-      *
-      * finds the object that a $ref points to
-      */
-     private function followReference($reference) {
-         if (!array_key_exists($reference, $this->references)) {
-             if (preg_match("/^#/", $reference) == 1) {
-                 $this->followLocalReference($reference);
-             }
-             else if (preg_match("/^https?:\/\//") == 1) {
-                 $this->followUriReference($reference);
-             }
-             else {
-                 $this->followFileReference($reference);
-             }
-         }
-         return $this->references[$reference];
-     }
+            if (!empty($pathobj)) {
+                foreach ($apath as $pe) {
+                    $aVarname = [];
+                    if (preg_match("/^\{(.+)\}$/", $pe, $aVarname)) {
+                        $vnames[] = $aVarname[1];
+                        $rpath[]  = '([^\/]+)';
+                    }
+                    else {
+                        $rpath[] = $pe;
+                    }
+                }
 
-     private function followLocalReference($reference) {
-         $ref = preg_replace("/^#/", "", $reference);
+                $repath = '/^' . implode('\\/', $rpath) . '(?:\\/(.+))?$/';
 
-         $o = $this->expandReference($ref, $this->cfg);
+                $this->pathMap[$repath] = [
+                    "pathitem" => $pathobj,
+                    "vars" => $vnames,
+                    "path" => $path
+                ];
+            }
+        }
 
-         if (!empty($o)) {
-             $this->references[$reference] = $o;
-         }
-     }
+        // speed up the matching
+        $array = [];
+        foreach ($this->pathMap as $pattern => $value) {
+            $array[] = $pattern;
+        }
 
-     private function expandReference($ref, $refobj) {
-         $refList = explode($ref, "/");
-         $refObject = null;
+        usort($array, function ($a,$b){return strlen($b) - strlen($a);});
+        $this->orderedPaths = $array;
+    }
 
-         if (empty($refList[0])) {
-             array_shift($refList);
-         }
+    /**
+    * @private @method $expandedObject = expandObject($object)
+    *
+    * This method expands an OAI object if necessary.
+    */
+    private function expandObject($object) {
+        if (array_key_exists('$ref', $object)) {
+            return $this->followReference($object['$ref']);
+        }
+        return $object;
+    }
 
-         while ($refobj &&
-                !empty($refList) &&
-                array_key_exists($refList[0], $refobj)) {
+    /**
+    * followReference($reference)
+    *
+    * finds the object that a $ref points to
+    */
+    private function followReference($reference) {
+        if (!array_key_exists($reference, $this->references)) {
+            if (preg_match("/^#/", $reference) == 1) {
+                $this->followLocalReference($reference);
+            }
+            else if (preg_match("/^https?:\/\//") == 1) {
+                $this->followUriReference($reference);
+            }
+            else {
+                $this->followFileReference($reference);
+            }
+        }
+        return $this->references[$reference];
+    }
 
-             $refobj = $refobj[$refList[0]];
-             array_shift($refList);
-         }
+    /**
+    *
+    */
+    private function followLocalReference($reference) {
+        $ref = preg_replace("/^#/", "", $reference);
 
-         if (empty($refList)) {
-             $refObject = $refobj;
-         }
+        $this->references[$reference] = [];
 
-         return $refObject;
-     }
+        $o = $this->expandReference($ref, $this->cfg);
 
-     private function followFileReference($reference) {
-         $tarr = explode("#", $reference);
+        if (!empty($o)) {
+            $this->references[$reference] = $o;
+        }
+    }
 
-         $fn = $this->basedir . DIRECTORY_SEPARATOR . $tarr[0];
+    /**
+    *
+    */
+    private function expandReference($ref, $refobj) {
+        $refList = explode($ref, "/");
+        $refObject = null;
 
-         if (file_exists($fn) &&
-             is_file($fn) &&
-             is_readable($fn)) {
+        if (empty($refList[0])) {
+            array_shift($refList);
+        }
 
-             $reffile = file_get_contents($fn);
+        while ($refobj &&
+        !empty($refList) &&
+        array_key_exists($refList[0], $refobj)) {
 
-             try {
-                 $cfgext = json_decode($reffile, true);
-             }
-             catch (Exception $e) {
-                 $cfgext = yaml_parse($reffile);
-             }
+            $refobj = $refobj[$refList[0]];
+            array_shift($refList);
+        }
 
-             if (!empty($cfgext)) {
-                 // expand subpath
-                 if (empty($tarr[1])) {
-                     $this->references[$reference] = $cfgext;
-                 }
-                 else {
-                     $o = $this->expandReference($tarr[1], $cfgext);
-                     if (!empty($o)) {
-                         $this->references[$reference] = $o;
-                     }
-                 }
-             }
-         }
-     }
+        if (empty($refList)) {
+            $refObject = $refobj;
+        }
 
-     private function followUriReference($reference) {
-         // needs to implement caching
-         // strip subpath
-         // expand subpath
-     }
+        return $refObject;
+    }
+
+    /**
+    *
+    */
+    private function followFileReference($reference) {
+        $tarr = explode("#", $reference);
+
+        $fn = $this->basedir . DIRECTORY_SEPARATOR . $tarr[0];
+
+        $this->references[$reference] = [];
+
+        if (file_exists($fn) &&
+        is_file($fn) &&
+        is_readable($fn)) {
+
+            $reffile = file_get_contents($fn);
+
+            try {
+                $cfgext = json_decode($reffile, true);
+            }
+            catch (Exception $e) {
+                $cfgext = yaml_parse($reffile);
+            }
+
+            if (!empty($cfgext)) {
+                // expand subpath
+                if (empty($tarr[1])) {
+                    $this->references[$reference] = $cfgext;
+                }
+                else {
+                    $o = $this->expandReference($tarr[1], $cfgext);
+                    if (!empty($o)) {
+                        $this->references[$reference] = $o;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+    *
+    */
+    private function followUriReference($reference) {
+        // needs to implement caching
+        // strip subpath
+        // expand subpath
+        $this->references[$reference] = [];
+    }
 }
 
 ?>
