@@ -2,6 +2,8 @@
 
 namespace RESTling;
 
+use \League\JsonGuard\Validator as JSONValidator;
+
 class Input {
     private $input;
     private $query;
@@ -121,6 +123,23 @@ class Input {
                     break;
                 default:
                     break;
+            }
+        }
+        return false;
+    }
+
+    public function hasParameterWithSchema($pname, $source, $schema) {
+        $sources = ["query", "body", "cookie", "path", "header"];
+
+        if (!empty($source) && in_array($source, $sources)) {
+            $sources = [$source];
+        }
+
+        if ($this->hasParameter($pname, $sources)) {
+            $validator = new JSONValidator($data, $schema);
+
+            if ($validator->passes()) {
+                return true;
             }
         }
         return false;
