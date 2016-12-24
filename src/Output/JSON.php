@@ -2,23 +2,26 @@
 
 namespace RESTling\Output;
 
-class JSON extends Base {
+class JSON extends \RESTling\Output {
 
     public function __construct() {
         $this->contentType = "application/json";
     }
 
-    public function send($data) {
+        public function setContentType($ct) {
+        }
 
+    public function data($data) {
         if(is_array($data) || is_object($data)) {
-            echo(json_encode($data));
+            $data = json_encode($data);
         }
-        else {
-            parent::send($data);
-        }
+        parent::data($data);
     }
 
-    public function finish() {}
+    protected function formatTraceback() {
+        // TODO fancy formating using an error model
+        $this->data($this->traceback);
+    }
 }
 
 ?>

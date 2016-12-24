@@ -4,6 +4,7 @@ namespace RESTling;
 abstract class Model {
     protected $data;
     protected $input;
+    private $errors = [];
 
     public function __construct(){
     }
@@ -15,8 +16,13 @@ abstract class Model {
     public function getHeaders() {
         return [];
     }
-    public function getAllErrors() {
-        return [];
+
+    public function addError($message) {
+        $this->errors[] = $message;
+    }
+
+    public function getErrors() {
+        return $this->errors;
     }
 
     public function hasData()
@@ -24,12 +30,29 @@ abstract class Model {
         return !empty($this->data);
     }
 
-    public function getData()
+    /**
+ 	 * passes any data that should be sent to the client to the output model.
+     *
+     * A model needs to implement a streaming API if this function runs until
+     * all content has been delivered.
+     *
+     * This function runs a non-caching environment, so every data passed to
+     * the ```$outputModel``` will be immediately sent to the client. This will
+     * not work around any HTTP server level caching.
+     *
+     * if a model handles its own data streaming, then it should use the
+     * $outputModel's ```bypass()``` method.
+ 	 *
+ 	 * @param RESTling\Output $outputModel
+	 */
+    public function handleData($output)
     {
-        $d = $this->data;
+        if ($this->hasData()) {
+            if (is_object($output) && method_exists($output, "data")) {
+                $output->data($this->data);
+            }
+        }
         $this->data = null;
-
-        return $d;
     }
 }
 

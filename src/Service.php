@@ -2,8 +2,8 @@
 
 namespace RESTling;
 
-use RESTling\Input\Base  as BaseHandler;
-use RESTling\Output\Base as BaseResponder;
+use RESTling\Input  as BaseParser;
+use RESTling\Output as BaseResponder;
 
 class Service
 {
@@ -16,7 +16,7 @@ class Service
 
     private $inputContentTypeMap = [
         "application/json"                   => "RESTling\\Input\\JSON",
-        "application\/x-www-form-urlencoded" => "RESTling\\Input\\Base",
+        "application\/x-www-form-urlencoded" => "RESTling\\Input",
         "multipart/form-data"                => "RESTling\\Input\\MultiPartForm",
         // "text/xml"                           => "RESTling\\Input\\XML",
         "text/yaml"                          => "RESTling\\Input\\YAML",
@@ -34,8 +34,8 @@ class Service
         "text/vnd.yaml"                      => "RESTling\\Output\\YAML",
         "application/x-yaml"                 => "RESTling\\Output\\YAML",
         "text/x-yaml"                        => "RESTling\\Output\\YAML",
-        "text/plain"                         => "RESTling\\Output\\Base",
-        "*/*"                                => "RESTling\\Output\\Base"
+        "text/plain"                         => "RESTling\\Output",
+        "*/*"                                => "RESTling\\Output"
                               ];
 
     protected $error;
@@ -254,6 +254,7 @@ class Service
             }
 
             if (!$validation) {
+                // at least one security handler must accept
                 throw new Exception("Authorization Required");
             }
         }
@@ -282,11 +283,11 @@ class Service
                 $this->error = $this->inputHandler->parse();
             }
             else {
-                $this->inputHandler = new BaseHandler();
+                $this->inputHandler = new BaseParser();
             }
         }
         else {
-            $this->inputHandler = new BaseHandler();
+            $this->inputHandler = new BaseParser();
         }
     }
 
@@ -306,10 +307,7 @@ class Service
      *
      */
     protected function verifyAccess() {
-        if ($this->securityHandler &&
-            !$this->securityHandler->verifyAccess()) {
-            throw new Exception("Forbidden");
-        }
+
     }
 
     /**
@@ -402,22 +400,12 @@ class Service
      */
     protected function processResponse() {
         // prepare out put after error handling
-        if (!empty($this->error)) {
-            $this->outputHandler->setErrorMessage($this->error);
-            if ($this->model) {
-                $this->outputHandler->setTraceback($this->model->getAllErrors());
-                if ($this->model->hasData()) {
-                    $this->outputHandler->addTraceback("data", $this->model->getData());
-                }
-            }
+        if ($this->responseCode) {
+            $this->outputHandler->setStatus($this->responseCode);
         }
-
-        // generate headers
-
-        // TODO Partial Content
-        // TODO Mutlipart Content
-        $this->outputHandler->getStatusCode($this->responseCode);
-        $this->outputHandler->getContentType();
+        if (!empty($this->error)) {
+            $this->outputHandler->addTraceback($this->error);
+        }
 
         // CORS handling
         if (!empty($this->corsHosts) &&
@@ -428,38 +416,21 @@ class Service
             if (array_key_exists($_SERVER['HTTP_REFERRER'], $this->corsHosts))
             {
                 $origin = $_SERVER['HTTP_REFERRER'];
-                $methods = join(', ', $this->corsHosts[$origin]);
+                $methods = $this->corsHosts[$origin];
             }
             elseif (array_key_exists('*', $this->corsHosts))
             {
                 $origin = '*';
-                $methods = join(', ', $this->corsHosts[$origin]);
+                $methods = $this->corsHosts[$origin];
             }
 
             if (!empty($origin)){
-                header('Access-Control-Allow-Origin: ' . $origin);
-                header('Access-Control-Allow-Methods: ' . $methods);
+                $this->outputHandler->setCORSContext($origin, $methods);
             }
         }
 
         // get additional model headers
-        if ($this->hasModel() &&
-            !empty($headers = $this->model->getHeaders())) {
-            foreach ($headers as $headername => $headervalue) {
-                header($headername . ": " . $headervalue);
-            }
-        }
-
-        if ($this->hasModel() &&
-            $this->model->hasData()) {
-            // stream the output
-            while ($this->model->hasData()) {
-                $this->outputHandler->send($this->model->getData());
-            }
-        }
-
-        // wrap up the response (or send error messages)
-        $this->outputHandler->finish();
+        $this->outputHandler->process($this->model);
     }
 
     /**
@@ -548,12 +519,6 @@ class Service
                     $this->responseCode = 400;
                     break;
             }
-        }
-        elseif ($this->hasModel() && !$this->model->hasData()) {
-            $this->responseCode = 204;
-        }
-        else {
-            $this->responseCode = 200;
         }
     }
 }

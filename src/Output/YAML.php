@@ -2,23 +2,18 @@
 
 namespace RESTling\Output;
 
-class YAML extends Base {
+class YAML extends \RESTling\Output\JSON {
 
     public function __construct() {
         $this->contentType = "text/yaml";
     }
-
-    public function send($data) {
-
+    
+    public function data($data) {
         if(is_array($data) || is_object($data)) {
-            echo(\yaml_emit($data));
+            $data = \yaml_emit($data);
         }
-        else {
-            parent::send($data);
-        }
+        parent::data($data);
     }
-
-    public function finish() {}
 }
 
 ?>

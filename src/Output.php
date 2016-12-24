@@ -1,8 +1,8 @@
 <?php
 
-namespace RESTling\Output;
+namespace RESTling;
 
-class Base {
+class Output {
     private $contentType = "text/plain";
 
     private $statusCode;
@@ -59,7 +59,10 @@ class Base {
         // generate headers
         http_response_code($this->statusCode);
 
-        header('Content-Type: ' . strtolower($this->contentType));
+        if ($this->contentType) {
+            // QUESTION might be a problem if used with bypassing?
+            header('Content-Type: ' . strtolower($this->contentType));
+        }
 
         header('X-UA-Compatible: IE=edge'); // force IE to obey!
         header('Cache-Control: no-cache');  // forbid caching
@@ -68,9 +71,6 @@ class Base {
             header('Access-Control-Allow-Origin: '  . $this->CORScontext["origin"]);
             header('Access-Control-Allow-Methods: ' . $this->CORScontext["methods"]);
         }
-
-        // TODO Partial Content
-        // TODO Mutlipart Content
 
         if($model) {
             // extend trackback
@@ -86,7 +86,7 @@ class Base {
                 }
             }
 
-            // check if there is any data
+            // let the model control the data stream
             if (method_exists($method, "handleData")) {
                 $model->handleData($this);
             }
@@ -99,17 +99,28 @@ class Base {
     }
 
     protected function formatTraceback() {
-        echo(join(', ', $this->traceback));
+        $this->data(join(', ', $this->traceback));
     }
 
+    /**
+     * the data() method sends a data chunk to the client
+     */
     public function data($data) {
         if (gettype($data) == "string") {
+            ob_end_flush();
+            // immediately send the data to the client
             echo($data);
+            ob_start();
         }
         $this->dataSent = true;
     }
 
-    public function bypass() {
+    /**
+ 	 * the bypass() method allows models to handle data delivery independently.
+ 	 *
+ 	 * @param type
+	 */
+	public function bypass() {
         $this->dataSent = true;
     }
 }
