@@ -87,7 +87,7 @@ class Output {
             }
 
             // let the model control the data stream
-            if (method_exists($method, "handleData")) {
+            if (method_exists($model, "handleData")) {
                 $model->handleData($this);
             }
         }
