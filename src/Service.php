@@ -5,12 +5,13 @@ namespace RESTling;
 use RESTling\Input  as BaseParser;
 use RESTling\Output as BaseResponder;
 
-class Service
+class Service implements ServiceInterface
 {
     private $model;
-    protected $inputHandler;
-    private   $outputHandler;
-    private   $securityHandler = [];
+    private $securityModel;
+    private $inputHandler;
+    private $outputHandler;
+    private $securityHandler = [];
 
     private $responseCode = 200;
 
@@ -75,6 +76,16 @@ class Service
             throw new Exception("Not a RESTling\\Model");
         }
         $this->model = $m;
+    }
+
+    final public function setSecurityModel($model, $secure = false) {
+        if ($secure && $this->securityModel) {
+            throw new Exception("Model already set");
+        }
+        if (!($model && $model instanceof \RESTling\Security\Model)) {
+            throw new Exception("Not a RESTling\\Model");
+        }
+        $this->model = $model;
     }
 
     /**
@@ -246,11 +257,14 @@ class Service
         if (!empty($this->securityHandler)) {
             $validation = false;
 
+            $model = $this->securityModel;
+            if (!$model) {
+                $model = $this->model;
+            }
+
             foreach ($this->securityHandler as $handler) {
-                if ($handler->willValidate()) {
-                    $validation = true;
-                    $handler->validate($this->model);
-                }
+                $handler->validate($model, $this->inputHandler);
+                $validation = ($validation || $handler->passes());
             }
 
             if (!$validation) {

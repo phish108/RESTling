@@ -2,7 +2,7 @@
 
 namespace RESTling;
 
-class OpenAPI extends Service {
+class OpenAPI extends Service implements OpenApiInterface {
 
     /** ***********************************************
     * Properties
@@ -206,7 +206,7 @@ class OpenAPI extends Service {
                 throw new Exception('Invalid Security Definition Type');
             }
 
-            $type = "\\RESTling\\Validator\\Security\\" . ucfirst($type);
+            $type = "\\RESTling\\Security\\OpenApi\\" . ucfirst($type);
 
             if (!class_exists($type, true)) {
                 throw new Exception('Security Handler Not Found');
@@ -219,7 +219,7 @@ class OpenAPI extends Service {
                 throw new Exception('Security Handler Broken');
             }
 
-            $secHandler->setScopeRequirements($scopes);
+            $secHandler->setScopes($scopes);
             $this->addSecurityHandler($secHandler);
         }
 
