@@ -210,22 +210,23 @@ class Service implements ServiceInterface
             "verifyModel",
             "findOperation",
             "parseInput",
-            "verifyAuthorization",
-            "validateInput",
-            "validateParameter",
+            "validateAuthorization",
             "verifyAccess",
+            "validateInput",
             "performOperation",
             "prepareOutputProcessor"
         ];
 
         if (empty($this->error)) {
             foreach ($fLoop as $func) {
-                try {
-                    call_user_func(array($this, $func));
-                }
-                catch (Exception $err) {
-                    $this->error = $err->getMessage();
-                    break;
+                if (method_exists($this, $func)) {
+                    try {
+                        call_user_func(array($this, $func));
+                    }
+                    catch (Exception $err) {
+                        $this->error = $err->getMessage();
+                        break;
+                    }
                 }
             }
         }
@@ -253,7 +254,7 @@ class Service implements ServiceInterface
     /**
      *
      */
-    private function verifyAuthorization() {
+    private function validateAuthorization() {
         if (!empty($this->securityHandler)) {
             $validation = false;
 
@@ -301,18 +302,6 @@ class Service implements ServiceInterface
         if (!$this->inputHandler) {
             $this->inputHandler = new BaseParser();
         }
-    }
-
-    /**
-     *
-     */
-    protected function validateInput()     {
-    }
-
-    /**
-     *
-     */
-    protected function validateParameter() {
     }
 
     /**

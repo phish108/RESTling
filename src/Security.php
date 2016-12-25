@@ -5,11 +5,7 @@ abstract class Security implements SecurityInterface {
     private $scopes  = []; // the scopes to verify
     private $passed = false;
 
-    public function __construct($cfgScheme) {
-        if (is_array($cfgScheme) && !empty($cfgScheme)) {
-            $this->scheme = $cfgScheme;
-            $this->validateScheme();
-        }
+    public function __construct() {
     }
 
     // accepts a list of scopes that are acceptable for the security scheme
@@ -22,7 +18,6 @@ abstract class Security implements SecurityInterface {
     }
 
     public function validate($model, $input) {
-        $this->errors = [];
         $this->passed = false;
         if ($input && !($input instanceof \RESTling\Input)) {
             throw new Exception('Invalid Input Type');
@@ -31,7 +26,6 @@ abstract class Security implements SecurityInterface {
 
     // for access (tests if scopes are accepted)
     public function verify($model, $input) {
-        $this->errors = [];
         $this->passed = false;
 
         if (!empty($scopes)) {

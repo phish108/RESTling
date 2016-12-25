@@ -8,13 +8,13 @@ class OpenAPI extends Service implements OpenApiInterface {
     * Properties
     */
 
-    private $orderedPaths = []; ///< helper for request path discovery
-    private $pathMap;           ///< helper for operation mapping
-    private $activePath;        ///< helper for request handling
-    private $activeMethod;      ///< helper for request handling
+    private $orderedPaths = [];   ///< helper for request path discovery
+    private $pathMap;             ///< helper for operation mapping
+    private $activePath;          ///< helper for request handling
+    private $activeMethod;        ///< helper for request handling
     private $pathParameters = []; ///< helper to pass path parameters to the inputHandler
 
-    private $config;            ///< keeps the OpenAPI configuration
+    private $config;              ///< keeps the OpenAPI configuration
 
     /**
     * @protected @method loadTagModel($taglist)
@@ -202,7 +202,7 @@ class OpenAPI extends Service implements OpenApiInterface {
             }
 
             $type = $this->config["components"][$sec]["type"];
-            if (in_array($type, ["apiKey", "http", "oauth2", "openIdConnect"])) {
+            if (!$type || !is_string($type) || !in_array($type, ["apiKey", "http", "oauth2", "openIdConnect"])) {
                 throw new Exception('Invalid Security Definition Type');
             }
 
@@ -213,13 +213,15 @@ class OpenAPI extends Service implements OpenApiInterface {
             }
 
             try {
-                $secHandler = new $type($this->config["components"][$sec]);
+                $secHandler = new $type();
             }
             catch (Exception $err) {
                 throw new Exception('Security Handler Broken');
             }
 
+            $secHandler->setScheme($this->config["components"][$sec]);
             $secHandler->setScopes($scopes);
+
             $this->addSecurityHandler($secHandler);
         }
 
@@ -250,7 +252,11 @@ class OpenAPI extends Service implements OpenApiInterface {
         }
     }
 
-    protected function validateParameter() {
+    protected function validateInput() {
+        $this->validateParameters();
+    }
+
+    private function validateParameters() {
         if (array_key_exists("parameters", $this->activeMethod)) {
             $params = $this->expandObject($this->activeMethod["parameters"]);
 

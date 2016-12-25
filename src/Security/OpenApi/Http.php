@@ -57,6 +57,7 @@ class Http extends \RESTling\Security\OpenApi {
         if (!$jwt || !(($jwt instanceof \Jose\Object\JWS) || !($jwt instanceof \Jost\Object\JWE))) {
             throw new Exception("Invalid JWT");
         }
+        
         // 3  load kid or jku from JOSE header if present
         // 3a ask JOSE Key Context (for $kid or $jku) from model
         // 4  if JWE find service privateKey($alg) and decrypt payload
