@@ -264,7 +264,15 @@ class Service implements ServiceInterface
             }
 
             foreach ($this->securityHandler as $handler) {
-                $handler->validate($model, $this->inputHandler);
+                try {
+                    $handler->validate($model, $this->inputHandler);
+                }
+                catch (Exception $err) {
+                    // explicit failure means that the authorization MUST NOT
+                    // be granted
+                    $this->outputHandler->addTraceback($err->getMessage());
+                    throw new Exception("Authorization Required");
+                }
                 $validation = ($validation || $handler->passes());
             }
 
