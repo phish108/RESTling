@@ -20,9 +20,10 @@ class ApiKey extends \RESTling\Security\OpenApi {
 
             $model->validateKey($this->token, $in);
 
-            // if no errors occured, yet we successfully validated
+            // if no errors occured, yet, then the token is validated
             $this->success();
         }
+        // report no success and no error, if no validation took place
     }
 
     protected function validateScheme() {
