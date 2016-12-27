@@ -10,7 +10,7 @@ class Bearer extends \RESTling\Security {
             $aAuth = explode(" ", $auth, 2);
             if (count($aAuth) == 2 && $aAuth[0] === "Bearer") {
                 if (!$model || !method_exists($model, "validateToken")) {
-                    throw new Exception("Token Validation Not Supported");
+                    throw new \RESTling\Exception\Security\TokenValidationUnsupported();
                 }
 
                 $model->validateToken($aAuth[1]);
