@@ -19,7 +19,7 @@ abstract class Security implements Interfaces\Security {
 
     public function validate($model, $input) {
         $this->passed = false;
-        if ($input && !($input instanceof \RESTling\Input)) {
+        if ($input && !($input instanceof \RESTling\Interfaces\Input)) {
             throw new Exception\InvalidInputType();
         }
     }
