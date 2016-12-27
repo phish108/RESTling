@@ -136,14 +136,5 @@ interface ServiceInterface extends WorkerInterface {
  	 * @return void
 	 */
 	public function addOutputContentTypeMap($contentType, $handlerType);
-
-    /**
- 	 * Runs the service process.
- 	 *
-     * This function must be called in order to intiate the service handling.
-     *
- 	 * @return void
-	 */
-    public function run();
 }
 ?>
