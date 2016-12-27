@@ -10,7 +10,7 @@ class Oauth2 extends \RESTling\Security\OpenApi {
 
     protected function validateScheme() {
         if (!$this->has("flow")) {
-            throw new Exception('Missing Security Flow');
+            throw new \RESTling\Exception\Security\OpenApi\MissingOauth2Flow();
         }
 
         $flow = $this->get("flow");
@@ -33,7 +33,7 @@ class Oauth2 extends \RESTling\Security\OpenApi {
             $hasFlow = true;
             $fobj = $flow["password"];
             if (!array_key_exists('scopes', $fobj) || empty($fobj['scopes'])) {
-                throw new E\RESTling\Exception\Security\OpenApi\MissingOauth2Scopes();
+                throw new \RESTling\Exception\Security\OpenApi\MissingOauth2Scopes();
             }
             if (!array_key_exists('tokenUrl', $fobj) || empty($fobj['tokenUrl'])) {
                 throw new \RESTling\Exception\Security\OpenApi\MissingTokenUrl();

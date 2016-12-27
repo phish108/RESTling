@@ -7,7 +7,7 @@ class Http extends \RESTling\Security\OpenApi {
 
     public function validate($model, $input) {
         if (!$this->handler) {
-            throw new Exception('HTTP Authorization Not Configured');
+            throw new \RESTling\Exception\Security\OpenApi\SchemeHandlerNotConfigured();
         }
         $this->handler->validate($model, $input);
         if ($this->handler->passes()) {
