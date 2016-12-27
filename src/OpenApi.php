@@ -175,54 +175,54 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         }
 
         // filter the security requirements for the method
-        if (array_key_exists("security", $this->activeMethod) &&
-            empty($this->activeMethod["security"])) {
+        if (!empty($this->activeMethod["security"]) &&
+            array_key_exists("security", $this->activeMethod)) {
             throw new Exception\OpenAPI\MissingSecurityRequirements();
-        }
 
-        if (!array_key_exists("components", $this->config)) {
-            throw new Exception\OpenAPI\MissingSecurityDefinitions();
-        }
-
-        foreach ($this->activeMethod['security'] as $sec => $scopes) {
-            // note multiple security requirements may exist
-            // NONE of these requirements must reject the authorization and access.
-            // different security handers may reject either one.
-
-            if (!array_key_exists($sec, $this->config["components"])) {
-                throw new Exception\OpenAPI\MissingSecurityDefinitions();
+            if (!array_key_exists("components", $this->config)) {
+                throw new Exception\OpenAPI\MissingSecurityDefinition();
             }
+            
+            foreach ($this->activeMethod['security'] as $sec => $scopes) {
+                // note multiple security requirements may exist
+                // NONE of these requirements must reject the authorization and access.
+                // different security handers may reject either one.
 
-            if (empty($scopes)) {
-                throw new Exception\OpenAPI\MissingSecurityRequirements();
+                if (!array_key_exists($sec, $this->config["components"])) {
+                    throw new Exception\OpenAPI\MissingSecurityDefinition();
+                }
+
+                if (empty($scopes)) {
+                    throw new Exception\OpenAPI\MissingSecurityRequirements();
+                }
+
+                if (!array_key_exists("type", $this->config["components"][$sec])) {
+                    throw new Exception\OpenAPI\BadSecurityRequirementsReference();
+                }
+
+                $type = $this->config["components"][$sec]["type"];
+                if (!$type || !is_string($type) || !in_array($type, ["apiKey", "http", "oauth2", "openIdConnect"])) {
+                    throw new Exception\OpenAPI\InvalidSecurityDefinitionType();
+                }
+
+                $type = "\\RESTling\\Security\\OpenApi\\" . ucfirst($type);
+
+                if (!class_exists($type, true)) {
+                    throw new Exception\OpenAPI\SecurityHandlerNotFound();
+                }
+
+                try {
+                    $secHandler = new $type();
+                }
+                catch (Exception $err) {
+                    throw new Exception\OpenAPI\SecurityHandlerBroken();
+                }
+
+                $secHandler->setScheme($this->config["components"][$sec]);
+                $secHandler->setScopes($scopes);
+
+                $this->addSecurityHandler($secHandler);
             }
-
-            if (!array_key_exists("type", $this->config["components"][$sec])) {
-                throw new Exception\OpenAPI\BadSecurityRequirementsReference();
-            }
-
-            $type = $this->config["components"][$sec]["type"];
-            if (!$type || !is_string($type) || !in_array($type, ["apiKey", "http", "oauth2", "openIdConnect"])) {
-                throw new Exception\OpenAPI\InvalidSecurityDefinitionType();
-            }
-
-            $type = "\\RESTling\\Security\\OpenApi\\" . ucfirst($type);
-
-            if (!class_exists($type, true)) {
-                throw new Exception\OpenAPI\SecurityHandlerNotFound();
-            }
-
-            try {
-                $secHandler = new $type();
-            }
-            catch (Exception $err) {
-                throw new Exception\OpenAPI\SecurityHandlerBroken();
-            }
-
-            $secHandler->setScheme($this->config["components"][$sec]);
-            $secHandler->setScopes($scopes);
-
-            $this->addSecurityHandler($secHandler);
         }
 
         // filter possible output types
