@@ -8,13 +8,13 @@ class JSON extends \RESTling\Input {
         $data = trim(file_get_contents("php://input"));
 
         if (empty($data)) {
-            throw new Exception("Empty_Input_Data");
+            throw new \RESTling\Exception\EmptyInputData();
         }
         try {
             $this->bodyParameters = json_decode($data, true);
         }
         catch (Exception $err) {
-            throw new Exception("Broken_Input_Data");
+            throw new \RESTling\Exception\BrokenInput();
         }
         return "";
     }

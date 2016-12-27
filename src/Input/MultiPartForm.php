@@ -7,7 +7,7 @@ class MultiPartForm extends \RESTling\Input {
     public function parse() {
 
         if (empty($_POST)) {
-            throw new Exception("Empty_Input_Data");
+            throw new \RESTling\Exception\EmptyInputData();
         }
 
         $this->bodyParameters = $_POST;
