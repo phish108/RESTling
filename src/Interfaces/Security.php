@@ -1,10 +1,8 @@
 <?php
 namespace RESTling\Interfaces;
 
-interface Security {
-    public function validate($model, $input);
+interface Security extends Validator {
     public function verify($model, $input);
-    public function passes();
     public function setScopes($scopeSet);
 }
 ?>
