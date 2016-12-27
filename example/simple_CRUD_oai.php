@@ -11,7 +11,7 @@ require_once __DIR__."/../vendor/autoload.php";
  * model methods to call.
  *
  * The OpenAPI Service loader will select the RestlingTest model because of
- * Service Title to Classname mapping. 
+ * Service Title to Classname mapping.
  */
 class RestlingTest extends \RESTling\Model
 {
@@ -37,21 +37,21 @@ class RestlingTest extends \RESTling\Model
         return "Gone"; // return Gone error
     }
 
-    public function gimmeVmore()
+    public function gimmeVmore($input)
     {
         $this->data = 'get ok + ';
-        if ($this->input &&
-            $this->input->hasParameter("foo")) {
-            $this->data .= $this->input->getParameter("foo");
+        if ($input &&
+            $input->hasParameter("foo")) {
+            $this->data .= $input->getParameter("foo");
         }
     }
 
-    public function putMeFurtherDown()
+    public function putMeFurtherDown($input)
     {
         $this->data = 'put ok + ';
-        if ($this->input &&
-            $this->input->hasParameter("foo")) {
-            $this->data .= $this->input->getParameter("foo");
+        if ($input &&
+            $input->hasParameter("foo")) {
+            $this->data .= $input->getParameter("foo");
         }
     }
 }
