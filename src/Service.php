@@ -72,7 +72,7 @@ class Service implements Interfaces\Service
         if ($secure && $this->model) {
             throw new Exception\ModelAlreadySet();
         }
-        if (!($m && $m instanceof \RESTling\ModelInterface)) {
+        if (!($m && $m instanceof \RESTling\Interfaces\Model)) {
             throw new Exception\ModelInterfaceMismatch();
         }
         $this->model = $m;
@@ -82,7 +82,7 @@ class Service implements Interfaces\Service
         if ($secure && $this->securityModel) {
             throw new Exception\ModelAlreadySet();
         }
-        if (!($model && $model instanceof \RESTling\Security\ModelInterface)) {
+        if (!($model && $model instanceof \RESTling\Interfaces\Security\Model)) {
             throw new Exception\SecurityModelInterfaceMismatch();
         }
         $this->model = $model;
@@ -96,7 +96,7 @@ class Service implements Interfaces\Service
      * model is set.
      */
     final protected function hasModel() {
-        return ($this->model && $this->model instanceof \RESTling\Model);
+        return ($this->model && $this->model instanceof \RESTling\Interfaces\Model);
     }
 
     /**
@@ -110,7 +110,7 @@ class Service implements Interfaces\Service
 
 
     final public function addSecurityHandler($h) {
-        if (!($h && $h instanceof \RESTling\SecurityInterface)) {
+        if (!($h && $h instanceof \RESTling\Interfaces\Security)) {
             throw new Exception\SecurityInterfaceMismatch();
         }
         $this->securityHandler[] = $h;
@@ -185,7 +185,7 @@ class Service implements Interfaces\Service
      */
     final public function run($model = null) {
 
-        if ($model && !($model instanceof \RESTling\ModelInterface)) {
+        if ($model && !($model instanceof \RESTling\Interfaces\Model)) {
             $this->error = "No RESTling\ModelInterface Provided";
         }
         elseif ($model) {

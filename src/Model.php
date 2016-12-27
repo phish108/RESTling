@@ -20,7 +20,7 @@ abstract class Model implements Interfaces\Model {
     }
 
     public function addWorker($worker) {
-        if (!($worker && $worker instanceof \RESTling\WorkerInterface)) {
+        if (!($worker && $worker instanceof \RESTling\Interfaces\Worker)) {
             throw new Exception\WorkerInterfaceMismatch();
         }
         $this->worker[] = $worker;
