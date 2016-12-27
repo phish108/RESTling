@@ -136,6 +136,7 @@ class Input implements Interfaces\Input {
         }
 
         if ($this->hasParameter($pname, $sources)) {
+            $data = $this->getParameter($pname, $sources);
             $validator = new JSONValidator($data, $schema);
 
             if ($validator->fails()) {
