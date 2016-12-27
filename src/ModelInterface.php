@@ -1,0 +1,31 @@
+<?php
+namespace RESTling;
+
+interface ModelInterface {
+    public function setInput($inputObject);
+    public function getHeaders();
+    public function addError($message);
+
+    public function getErrors();
+
+    public function hasData();
+
+    /**
+ 	 * passes any data that should be sent to the client to the output model.
+     *
+     * A model needs to implement a streaming API if this function runs until
+     * all content has been delivered.
+     *
+     * This function runs a non-caching environment, so every data passed to
+     * the ```$outputModel``` will be immediately sent to the client. This will
+     * not work around any HTTP server level caching.
+     *
+     * if a model handles its own data streaming, then it should use the
+     * $outputModel's ```bypass()``` method.
+ 	 *
+ 	 * @param \RESTling\OutputInterface $outputModel
+	 */
+    public function handleData($output);
+}
+
+?>

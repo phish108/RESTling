@@ -72,8 +72,8 @@ class Service implements ServiceInterface
         if ($secure && $this->model) {
             throw new Exception("Model already set");
         }
-        if (!($m && $m instanceof \RESTling\Model)) {
-            throw new Exception("Not a RESTling\\Model");
+        if (!($m && $m instanceof \RESTling\ModelInterface)) {
+            throw new Exception("Not a RESTling\\ModelInterface");
         }
         $this->model = $m;
     }
@@ -82,8 +82,8 @@ class Service implements ServiceInterface
         if ($secure && $this->securityModel) {
             throw new Exception("Model already set");
         }
-        if (!($model && $model instanceof \RESTling\Security\Model)) {
-            throw new Exception("Not a RESTling\\Model");
+        if (!($model && $model instanceof \RESTling\Security\ModelInterface)) {
+            throw new Exception("Not a RESTling\\Security\\ModelInterface");
         }
         $this->model = $model;
     }
@@ -108,35 +108,14 @@ class Service implements ServiceInterface
          return (!$this->hasModel());
      }
 
-    /**
-     * @final @public @method setSecurityHandler($handler)
-     * @parameter \RESTling\Validator $handler
-     *
-     * Sets the security validator.
-     *
-     * @throws Exception "Not a RESTling\Validator\\Security"
-     */
+
     final public function addSecurityHandler($h) {
-        if (!($h && $h instanceof \RESTling\Validator\Security)) {
-            throw new Exception("Not a RESTling\\Validator\\Security");
+        if (!($h && $h instanceof \RESTling\SecurityInterface)) {
+            throw new Exception("Not a RESTling\\SecurityInterface");
         }
         $this->securityHandler[] = $h;
     }
 
-    /**
-     * @final @public @method addCORSHost($host, $methods)
-     * @parameter mixed $host
-     * @parameter mixed $methods
-     *
-     * Interface to Cross Origin Resource Sharing (CORS) handling.
-     *
-     * This function allows to specify, which referring sites can access this
-     * service.
-     *
-     * Both parameters can be either strings or arrays.
-     *
-     * @throws Exception 'Invalid CORS Parameter', if parameters are of invalid type.
-     */
     final public function addCORSHost($host, $aMethods) {
         if (!((is_string($host) || is_array($host)) &&
               (is_string($aMethods) || is_array($aMethods)))) {

@@ -1,7 +1,7 @@
 <?php
 namespace RESTling;
 
-abstract class Model {
+abstract class Model implements ModelInterface {
     protected $data;
     protected $input;
     private $errors = [];
@@ -45,7 +45,7 @@ abstract class Model {
  	 *
  	 * @param RESTling\Output $outputModel
 	 */
-    public function handleData($output)
+    final public function handleData($output)
     {
         if ($this->hasData()) {
             if (is_object($output) && method_exists($output, "data")) {
