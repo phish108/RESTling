@@ -1,6 +1,7 @@
 <?php
 namespace RESTling\Security;
 
+// the security model needs to implement a validateToken($token) method
 class Bearer extends \RESTling\Security {
     public function validate($model, $input) {
         parent::validate($model, $input);
