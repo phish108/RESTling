@@ -183,7 +183,14 @@ class Service implements ServiceInterface
      *
      * The run() method implements the core request processing.
      */
-    final public function run() {
+    final public function run($model = null) {
+
+        if ($model && !($model instanceof \RESTling\ModelInterface)) {
+            $this->error = "No RESTling\ModelInterface Provided";
+        }
+        elseif ($model) {
+            $this->setModel($model);
+        }
 
         $fLoop = [
             "verifyModel",
@@ -212,6 +219,11 @@ class Service implements ServiceInterface
 
         $this->handleError();
         $this->processResponse();
+
+        ob_flush();// definitely terminate pass all response content
+
+        set_time_limit(0); // allow long running processes
+        $this->postProcess();
     }
 
     /**
@@ -520,6 +532,16 @@ class Service implements ServiceInterface
                     $this->responseCode = 400;
                     break;
             }
+        }
+    }
+
+    /**
+ 	 * Allows a service to run a worker job after the response handling is
+     * completed.
+	 */
+	protected function postProcess() {
+        if ($this->hasModel()) {
+            $this->model->runWorkers();
         }
     }
 }

@@ -6,6 +6,8 @@ abstract class Model implements ModelInterface {
     protected $input;
     private $errors = [];
 
+    private $worker = [];
+
     public function __construct(){
     }
 
@@ -16,6 +18,20 @@ abstract class Model implements ModelInterface {
     public function getHeaders() {
         return [];
     }
+
+    public function addWorker($worker) {
+        if (!($worker && $worker instanceof \RESTling\WorkerInterface)) {
+            throw new Exception("No RESTling\Worker Provided");
+        }
+        $this->worker[] = $worker;
+    }
+
+    public function runWorkers() {
+        foreach ($this->worker as $worker) {
+            $worker->run($this);
+        }
+    }
+
 
     public function addError($message) {
         $this->errors[] = $message;

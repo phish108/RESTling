@@ -11,6 +11,22 @@ interface ModelInterface {
     public function hasData();
 
     /**
+ 	 * Adds a new Worker object for post processing.
+ 	 *
+ 	 * @param \RESTling\WorkerInterface $worker
+ 	 * @return void
+     * @throws WorkerInterfaceError
+	 */
+	public function addWorker($worker);
+
+    /**
+ 	 * Runs all Workers that have been previously added through addWorker().  
+ 	 *
+ 	 * @return void
+	 */
+	public function runWorkers();
+
+    /**
  	 * passes any data that should be sent to the client to the output model.
      *
      * A model needs to implement a streaming API if this function runs until
