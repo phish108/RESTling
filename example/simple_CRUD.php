@@ -10,7 +10,7 @@ require_once __DIR__."/../vendor/autoload.php";
 // for complex data processing you may want to override the
 // hasData() and getData() functions.
 // If you want to provide complex error information, you want to
-// implement  
+// implement
 class RestlingTest extends \RESTling\Model
 {
     public function get()
@@ -37,7 +37,5 @@ class RestlingTest extends \RESTling\Model
 }
 
 $service = new RESTling\Service();
-$service->setModel(new RestlingTest());
-
-$service->run();
+$service->run(new RestlingTest());
 ?>
