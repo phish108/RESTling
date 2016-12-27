@@ -2,7 +2,7 @@
 
 namespace RESTling;
 
-class OpenAPI extends Service implements OpenApiInterface {
+class OpenAPI extends Service implements Interfaces\OpenApi {
 
     /** ***********************************************
     * Properties
@@ -145,14 +145,14 @@ class OpenAPI extends Service implements OpenApiInterface {
         }
 
         if (!$this->activePath) {
-            throw new Exception("Bad Request");
+            throw new Exception\BadRequest();
         }
 
         // verify method for path
         $m = strtolower($_SERVER['REQUEST_METHOD']);
 
         if (!array_key_exists($m, $this->activePath)) {
-            throw new Exception("Not Allowed");
+            throw new Exception\NotAllowed();
         }
 
         $this->activeMethod = $this->expandObject($this->activePath[$m]);
@@ -175,13 +175,13 @@ class OpenAPI extends Service implements OpenApiInterface {
         }
 
         // filter the security requirements for the method
-        if (!array_key_exists("security", $this->activeMethod) ||
+        if (array_key_exists("security", $this->activeMethod) &&
             empty($this->activeMethod["security"])) {
-            throw new Exception('Missing Security Requirements');
+            throw new Exception\OpenAPI\MissingSecurityRequirements();
         }
 
         if (!array_key_exists("components", $this->config)) {
-            throw new Exception('Missing Security Definitions');
+            throw new Exception\OpenAPI\MissingSecurityDefinitions();
         }
 
         foreach ($this->activeMethod['security'] as $sec => $scopes) {
@@ -190,33 +190,33 @@ class OpenAPI extends Service implements OpenApiInterface {
             // different security handers may reject either one.
 
             if (!array_key_exists($sec, $this->config["components"])) {
-                throw new Exception('Missing Security Definitions');
+                throw new Exception\OpenAPI\MissingSecurityDefinitions();
             }
 
             if (empty($scopes)) {
-                throw new Exception('Missing Security Requirements');
+                throw new Exception\OpenAPI\MissingSecurityRequirements();
             }
 
             if (!array_key_exists("type", $this->config["components"][$sec])) {
-                throw new Exception('Bad Security Requirements Reference');
+                throw new Exception\OpenAPI\BadSecurityRequirementsReference();
             }
 
             $type = $this->config["components"][$sec]["type"];
             if (!$type || !is_string($type) || !in_array($type, ["apiKey", "http", "oauth2", "openIdConnect"])) {
-                throw new Exception('Invalid Security Definition Type');
+                throw new Exception\OpenAPI\InvalidSecurityDefinitionType();
             }
 
             $type = "\\RESTling\\Security\\OpenApi\\" . ucfirst($type);
 
             if (!class_exists($type, true)) {
-                throw new Exception('Security Handler Not Found');
+                throw new Exception\OpenAPI\SecurityHandlerNotFound();
             }
 
             try {
                 $secHandler = new $type();
             }
             catch (Exception $err) {
-                throw new Exception('Security Handler Broken');
+                throw new Exception\OpenAPI\SecurityHandlerBroken();
             }
 
             $secHandler->setScheme($this->config["components"][$sec]);
@@ -262,17 +262,17 @@ class OpenAPI extends Service implements OpenApiInterface {
 
             foreach ($params as $param) {
                 if (!(array_key_exists("name", $param) || array_key_exists("in", $param))) {
-                    throw new Exception("Invalid Parameter Object");
+                    throw new Exception\OpenAPI\InvalidParameterObject();
                 }
                 if (array_key_exists("required", $param) &&
                     !$this->inputHandler->hasParameter($param["name"], $param["in"])) {
 
-                    throw new Exception("Required Parameter Missing");
+                    throw new Exception\OpenAPI\MissingRequiredParameter();
                 }
 
                 if (array_key_exists("schema", $param) &&
                     !$this->inputHandler->hasParameterSchema($param["name"], $param["in"], $param["schema"])) {
-                    throw new Exception("Invalid Parameter Format");
+                    throw new Exception\OpenAPI\InvalidParameterFormat();
                 }
             }
         }
@@ -333,18 +333,18 @@ class OpenAPI extends Service implements OpenApiInterface {
 
     private function _loadConfigFile($fqfn) {
         if (empty($fqfn)) {
-            throw new Exception("OpenAPI Config File Missing");
+            throw new Exception\OpenAPI\MissingConfigFile();
         }
 
         if (!file_exists($fqfn)) {
-            throw new Exception("OpenAPI Config File Not Found");
+            throw new Exception\OpenAPI\ConfigFileNotFound();
         }
 
         try {
             $cfgString = file_get_contents($fqfn);
         }
         catch (Exception $e) {
-            throw new Exception("OpenAPI Config File Broken");
+            throw new Exception\OpenAPI\ConfigFileBroken();
         }
 
         $this->_loadConfigString($cfgString);
@@ -352,7 +352,7 @@ class OpenAPI extends Service implements OpenApiInterface {
 
     private function _loadConfigString($cfgStr) {
         if (empty($cfgStr)) {
-            throw new Exception("OpenAPI Configuration Empty");
+            throw new Exception\OpenAPI\ConfigEmpty();
         }
 
         try {
@@ -363,12 +363,12 @@ class OpenAPI extends Service implements OpenApiInterface {
                 $o = yaml_parse($cfgStr);
             }
             catch(Exception $e2) {
-                throw new Exception("OpenAPI Configuration Broken");
+                throw new Exception\OpenAPI\ConfigBroken();
             }
         }
 
         if (empty($o)) {
-            throw new Exception("OpenAPI Configuration Invalid");
+            throw new Exception\OpenAPI\InvalidConfiguration();
         }
 
         $this->_loadApiObject($o);
@@ -377,31 +377,31 @@ class OpenAPI extends Service implements OpenApiInterface {
 
     private function _loadApiObject($oaiObject) {
         if (!is_array($oaiObject)) {
-            throw new Exception("Invalid Configuration Object");
+            throw new Exception\OpenAPI\InvalidConfigurationObject();
         }
 
         if (empty($oaiObject) ||
         !array_key_exists("openapi", $oaiObject) ||
         empty($oaiObject["openapi"])) {
-            throw new Exception("OpenAPI Verion Missing");
+            throw new Exception\OpenAPI\MissingVersion();
         }
 
         $version = explode(".",  $oaiObject["openapi"]);
         if (count($version) != 3) {
-            throw new Exception("OpenAPI Version Invalid");
+            throw new Exception\OpenAPI\InvalidVersion();
         }
 
         if ($version[0] < 3) {
-            throw new Exception("OpenAPI Version Unsupported");
+            throw new Exception\OpenAPI\VersionUnsupported();
         }
 
         if (!array_key_exists("info", $oaiObject)){
-            throw new Exception("OpenAPI Info Missing");
+            throw new Exception\OpenAPI\MissingInfo();
         }
 
         if (!array_key_exists("paths", $oaiObject) ||
         empty($oaiObject["paths"])) {
-            throw new Exception("OpenAPI Paths Missing");
+            throw new Exception\OpenAPI\MissingPaths();
         }
 
         $this->config = $oaiObject;

@@ -1,7 +1,7 @@
 <?php
 namespace RESTling;
 
-abstract class Model implements ModelInterface {
+abstract class Model implements Interfaces\Model {
     protected $data;
     protected $input;
     private $errors = [];
@@ -21,7 +21,7 @@ abstract class Model implements ModelInterface {
 
     public function addWorker($worker) {
         if (!($worker && $worker instanceof \RESTling\WorkerInterface)) {
-            throw new Exception("No RESTling\Worker Provided");
+            throw new Exception\WorkerInterfaceMismatch();
         }
         $this->worker[] = $worker;
     }

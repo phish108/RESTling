@@ -11,7 +11,7 @@ class OpenIdConnect extends \RESTling\Security\OpenApi\Oauth2 {
     protected function validateScheme() {
         parent::validateScheme();
         if (!$this->has("openIdConnectUrl")) {
-            throw new Exception('Missing Security OIDC discovery variables');
+            throw new \RESTling\Exception\Security\OpenApi\MissingOidcUrl();;
         }
     }
 }

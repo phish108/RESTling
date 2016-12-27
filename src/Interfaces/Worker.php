@@ -1,7 +1,7 @@
 <?php
-namespace RESTling;
+namespace RESTling\Interfaces;
 
-interface WorkerInterface {
+interface Worker {
     /**
  	 * Runs the service process.
  	 *

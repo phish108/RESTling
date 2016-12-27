@@ -24,7 +24,7 @@ class Jwt extends \RESTling\Security {
                     $jwt = $loader->load($aAuth[1]);
                 }
                 catch (Exception $err) {
-                    throw new Exception("Invalid JWT");
+                    throw new \RESTling\Exception\Security\InvalidJwt();
                 }
 
                 $keyString = '';
@@ -37,7 +37,7 @@ class Jwt extends \RESTling\Security {
                     $enc = $jwt->getSharedProtectedHeader('enc');
 
                     if (empty($alg) && empty($enc)) {
-                        throw new Exception("Cannot Validate JWE");
+                        throw new \RESTling\Exception\Security\JweHeadersMissing();
                     }
 
                     // 3 get encryption keys
@@ -49,22 +49,22 @@ class Jwt extends \RESTling\Security {
                     if (empty($kid) && empty($jku)) {
                         // 3a check if we need to load a private key
                         if (!preg_match('/^RSA/', $alg)) {
-                            throw new Exception("JWA Algorithm $alg Unsupported");
+                            throw new \RESTling\Exception\Security\JwaUnsupported();
                         }
 
                         if (!method_exists($model, 'getPrivateKey')) {
-                            throw new Exception("JWE Private Key Decryption Not Supported");
+                            throw new \RESTling\Exception\Security\PrivateKeyDecryptionUnsupported();
                         }
 
                         // 3b  if JWE find service privateKey($alg) and decrypt payload
                         if (!($keyString = $model->getPrivateKey())) {
-                            throw new Exception("JWE Private Key Missing");
+                            throw new \RESTling\Exception\Security\PrivateKeyMissing();
                         }
                     }
                     else {
                         // 3c  load kid or jku from JOSE header if present
                         if (!method_exists($model, 'getSharedKey')) {
-                            throw new Exception("JWE Shared Key Decryption Not Supported");
+                            throw new \RESTling\Exception\Security\SharedKeyDecryptionUnsupported();
                         }
 
                         $keyId = $kid;
@@ -77,7 +77,7 @@ class Jwt extends \RESTling\Security {
 
                         // 3d ask JOSE Key Context (for $kid or $jku) from model
                         if (!($keyString = $model->getSharedKey($keyId))) {
-                            throw new Exception("JWE Private Key Missing");
+                            throw new \RESTling\Exception\Security\SharedKeyMissing();
                         }
                     }
 
@@ -85,7 +85,7 @@ class Jwt extends \RESTling\Security {
                                                                    null,
                                                                    $keyAttr);
                     if (!$key) {
-                        throw new Exception("JWE ALG-Key Broken");
+                        throw new \RESTling\Exception\Security\KeyBroken();
                     }
 
                     $jwk_set = new \Jose\Object\JWKSet();
@@ -96,12 +96,12 @@ class Jwt extends \RESTling\Security {
                         $decrypter->decryptUsingKeySet($jwt, $jwk_set, null);
                     }
                     catch (Exception $err) {
-                        throw new Exception("JWE Not Decrypted");
+                        throw new \RESTling\Exception\Security\DecryptionFailed();
                     }
 
                     $payload = $jwt->getPayload();
                     if (!$payload) {
-                        throw new Exception("Missing Payload");
+                        throw new \RESTling\Exception\Security\MissingPayload();
                     }
 
                     // 5  if JWE check if payload contains a JWS
@@ -109,11 +109,11 @@ class Jwt extends \RESTling\Security {
                         // 5a update $jwt hold the embedded JWS
                         $jwt = \Jose\Util\JWSLoader::loadSerializedJsonJWS($payload);
                         if (!$jwt || !($jwt instanceof \Jose\Object\JWS)) {
-                            throw new Exception("Invalid Embedded JWT");
+                            throw new \RESTling\Exception\Security\MissingJwt();
                         }
                     }
                     elseif (empty($kid) && empty($jku)) {
-                        throw new Exception("Embedded JWS Missing");
+                        throw new \RESTling\Exception\Security\InvalidJwt();;
                     }
                 }
 
@@ -140,26 +140,26 @@ class Jwt extends \RESTling\Security {
                     }
 
                     if (empty($alg)) {
-                        throw new Exception("Cannot Validate JWS");
+                        throw new \RESTling\Exception\Security\InvalidJwt();
                     }
 
                     if (empty($kid) && empty($jku)) {
-                        throw new Exception("Cannot Identify JWS Signature Key");
+                        throw new \RESTling\Exception\Security\KeyIdMissing();;
                     }
 
                     if (!method_exists($model, 'getSharedKey')) {
-                        throw new Exception("JWE Shared Key Validation Not Supported");
+                        throw new \RESTling\Exception\Security\SharedKeyValidationUnsupported();
                     }
 
                     if (!($keyString = $model->getSharedKey($keyId))) {
-                        throw new Exception("JWE Private Key Missing");
+                        throw new \RESTling\Exception\Security\SharedKeyMissing();
                     }
 
                     $key = \Jose\Factory\JWKFactory::createFromKey($keyString,
                                                                    null,
                                                                    $keyAttr);
                     if (!$key) {
-                        throw new Exception("JWE ALG-Key Broken");
+                        throw new \RESTling\Exception\Security\KeyBroken();;
                     }
 
                     $jwk_set = new \Jose\Object\JWKSet();
@@ -171,7 +171,7 @@ class Jwt extends \RESTling\Security {
                         $verifier->verifyWithKeySet($jwt, $jwk_set, null, null);
                     }
                     catch (Exception $err) {
-                        throw new Exception("JWS Not Verified");
+                        throw new \RESTling\Exception\Security\TokenRejected();
                     }
                 }
 
@@ -179,7 +179,7 @@ class Jwt extends \RESTling\Security {
                 $iss = $jwt->getClaim('iss');
 
                 if (empty($iss)) {
-                    throw new Exception("Missing Issuer Claim");
+                    throw new \RESTling\Exception\Security\MissingIssuer();
                 }
 
                 if (method_exists($model, "verifyIssuer")) {
@@ -187,7 +187,7 @@ class Jwt extends \RESTling\Security {
                         $model->verifyIssuer($iss, $keyId);
                     }
                     catch (Exception $err){
-                        throw new Exception("Issuer Validation Failed");
+                        throw new \RESTling\Exception\Security\IssuerRejected();
                     }
                 }
 
@@ -195,13 +195,13 @@ class Jwt extends \RESTling\Security {
                 $aud = $jwt->getClaim('aud');
 
                 if (empty($aud)) {
-                    throw new Exception("Missing Audience Claim");
+                    throw new \RESTling\Exception\Security\MissingAudience();
                 }
 
                 $myUrl = 'http' . ($_SERVER['HTTPS'] ? "s" : "") . "://" . (empty($_SERVER['HTTP_HOST']) ? $_SERVER['SERVER_NAME'] : $_SERVER['HTTP_HOST']) . $_SERVER['REQUEST_URI'];
 
                 if ($aud !== $myUrl) {
-                    throw new Exception("Audience Validation Failed");
+                    throw new \RESTling\Exception\Security\AudienceRejected();
                 }
 
                 // 11 verify extra claims based on RFC

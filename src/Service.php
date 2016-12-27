@@ -5,7 +5,7 @@ namespace RESTling;
 use RESTling\Input  as BaseParser;
 use RESTling\Output as BaseResponder;
 
-class Service implements ServiceInterface
+class Service implements Interfaces\Service
 {
     private $model;
     private $securityModel;
@@ -70,20 +70,20 @@ class Service implements ServiceInterface
      */
     final public function setModel($m, $secure = false) {
         if ($secure && $this->model) {
-            throw new Exception("Model already set");
+            throw new Exception\ModelAlreadySet();
         }
         if (!($m && $m instanceof \RESTling\ModelInterface)) {
-            throw new Exception("Not a RESTling\\ModelInterface");
+            throw new Exception\ModelInterfaceMismatch();
         }
         $this->model = $m;
     }
 
     final public function setSecurityModel($model, $secure = false) {
         if ($secure && $this->securityModel) {
-            throw new Exception("Model already set");
+            throw new Exception\ModelAlreadySet();
         }
         if (!($model && $model instanceof \RESTling\Security\ModelInterface)) {
-            throw new Exception("Not a RESTling\\Security\\ModelInterface");
+            throw new Exception\SecurityModelInterfaceMismatch();
         }
         $this->model = $model;
     }
@@ -111,7 +111,7 @@ class Service implements ServiceInterface
 
     final public function addSecurityHandler($h) {
         if (!($h && $h instanceof \RESTling\SecurityInterface)) {
-            throw new Exception("Not a RESTling\\SecurityInterface");
+            throw new Exception\SecurityInterfaceMismatch();
         }
         $this->securityHandler[] = $h;
     }
@@ -119,7 +119,7 @@ class Service implements ServiceInterface
     final public function addCORSHost($host, $aMethods) {
         if (!((is_string($host) || is_array($host)) &&
               (is_string($aMethods) || is_array($aMethods)))) {
-            throw new Exception("Invalid CORS Parameter");
+            throw new Exception\InvalidCorsParameter();
         }
         // host can be an array. The methods are an array too. Note that this is
         // not associative and that the methods are allowed for the provided
@@ -231,7 +231,7 @@ class Service implements ServiceInterface
      */
     protected function verifyModel() {
         if ($this->noModel()) {
-            throw new Exception("No_Model");
+            throw new Exception\MissingModel();
         }
     }
 
@@ -262,14 +262,14 @@ class Service implements ServiceInterface
                     // explicit failure means that the authorization MUST NOT
                     // be granted
                     $this->outputHandler->addTraceback($err->getMessage());
-                    throw new Exception("Authorization Required");
+                    throw new Exception\AuthorizationRequired();
                 }
                 $validation = ($validation || $handler->passes());
             }
 
             if (!$validation) {
                 // at least one security handler must accept
-                throw new Exception("Authorization Required");
+                throw new Exception\AuthorizationRequired();
             }
         }
     }
@@ -290,7 +290,7 @@ class Service implements ServiceInterface
                 $className = $this->inputContentTypeMap[$contentType];
 
                 if (!class_exists($className, true)) {
-                    throw new Exception("Missing_Content_Parser");
+                    throw new Exception\MissingContentParser();
                 }
 
                 $this->inputHandler = new $className();
@@ -318,7 +318,7 @@ class Service implements ServiceInterface
                 }
             }
             catch (Exception $err) {
-                throw new Exception('Forbidden');
+                throw new Exception\Forbidden();
             }
         }
     }
@@ -329,7 +329,7 @@ class Service implements ServiceInterface
     private function performOperation() {
         if ($this->noModel() ||
             !method_exists($this->model, $this->operation)) {
-            throw new Exception("Not Implemented");
+            throw new Exception\NotImplemented();
         }
 
         $this->model->setInput($this->inputHandler);
@@ -367,7 +367,7 @@ class Service implements ServiceInterface
                 $className = $this->outputContentTypeMap[$contentType];
 
                 if (!class_exists($className, true)) {
-                    throw new Exception("Missing_Output_Processor");
+                    throw new Exception\MissingOutputProcessor();
                 }
 
                 $this->outputHandler = new $className();
@@ -400,7 +400,7 @@ class Service implements ServiceInterface
                 $className = $this->outputContentTypeMap[$contentType];
 
                 if (!class_exists($className, true)) {
-                    throw new Exception("Missing_Output_Processor");
+                    throw new Exception\MissingOutputProcessor();
                 }
 
                 $this->outputHandler = new $className();
@@ -464,6 +464,7 @@ class Service implements ServiceInterface
         if (!empty($this->error)) {
             switch ($this->error) {
                 case "Missing_Content_Parser":
+                case "Missing Content Parser":
                     $this->responseCode = 415;
                     break;
                 case "Not Implemented":

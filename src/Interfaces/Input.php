@@ -1,8 +1,8 @@
 <?php
 
-namespace RESTling;
+namespace RESTling\Interfaces;
 
-interface InputInterface {
+interface Input {
 
     public function setPathParameters($paramlist);
 

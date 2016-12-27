@@ -1,7 +1,7 @@
 <?php
-namespace RESTling;
+namespace RESTling\Interfaces;
 
-interface ServiceInterface extends WorkerInterface {
+interface Service extends Worker {
 
     /**
      * This function allows to specify, which referring sites can access this

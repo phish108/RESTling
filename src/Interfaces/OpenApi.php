@@ -1,7 +1,7 @@
 <?php
-namespace RESTling;
+namespace RESTling\Interfaces;
 
-interface OpenApiInterface extends ServiceInterface {
+interface OpenApi extends Service {
     public function loadConfigFile($fqfn);
     public function loadConfigString($cfgString);
     public function loadApiObject($oaiObject);

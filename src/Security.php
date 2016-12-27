@@ -1,7 +1,7 @@
 <?php
 namespace RESTling;
 
-abstract class Security implements SecurityInterface {
+abstract class Security implements Interfaces\Security {
     private $scopes  = []; // the scopes to verify
     private $passed = false;
 
@@ -11,7 +11,7 @@ abstract class Security implements SecurityInterface {
     // accepts a list of scopes that are acceptable for the security scheme
     public function setScopes($scopes) {
         if (!is_array($scopes) || empty($scopes)) {
-            throw new Exception("Missing Scope Requirements");
+            throw new Exception\MissingScopeRequirements();
         }
 
         $this->scopes = $scopes;
@@ -20,7 +20,7 @@ abstract class Security implements SecurityInterface {
     public function validate($model, $input) {
         $this->passed = false;
         if ($input && !($input instanceof \RESTling\Input)) {
-            throw new Exception('Invalid Input Type');
+            throw new Exception\InvalidInputType();
         }
     }
 
@@ -30,7 +30,7 @@ abstract class Security implements SecurityInterface {
 
         if (!empty($scopes)) {
             if (!$model || !method_exists($model, "verifyScope")) {
-                throw new Exception("Scope Verification Not Supported");
+                throw new Exception\ScopeVerificationUnsupported();
             }
             foreach ($this->scopes as $scope) {
                 $model->verifyScope($scope);

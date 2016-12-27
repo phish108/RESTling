@@ -15,7 +15,7 @@ class ApiKey extends \RESTling\Security\OpenApi {
         if (!empty($this->token)) {
             // call the model
             if (!$model || !method_exists($model, "validateKey")) {
-                throw new Exception("ApiKey Validation Not Supported");
+                throw new \RESTling\Exception\Security\OpenApi\ApiKeyValidationUnsupported();
             }
 
             $model->validateKey($this->token, $in);
@@ -28,11 +28,11 @@ class ApiKey extends \RESTling\Security\OpenApi {
 
     protected function validateScheme() {
         if (!$this->has("name")) {
-            throw new Exception('Missing Security Parameter Name');
+            throw new \RESTling\Exception\Security\OpenApi\MissingParameter();
         }
 
         if (!$this->has("in", ["header", "query", "cookie"])) {
-            throw new Exception('Missing Security Source');
+            throw new \RESTling\Exception\Security\OpenApi\MissingSource();
         }
     }
 }

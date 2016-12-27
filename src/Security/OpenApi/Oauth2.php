@@ -20,59 +20,58 @@ class Oauth2 extends \RESTling\Security\OpenApi {
             $hasFlow = true;
             $fobj = $flow["implicit"];
             if (!array_key_exists('scopes', $fobj) || empty($fobj['scopes'])) {
-                throw new Exception('Missing Security OAuth2 Scopes');
+                throw new \RESTling\Exception\Security\OpenApi\MissingOauth2Scopes();
             }
             if (!array_key_exists('authorizationUrl', $fobj) || empty($fobj['authorizationUrl'])) {
-                throw new Exception('Missing Security OAuth2 authorizationUrl');
+                throw new \RESTling\Exception\Security\OpenApi\MissingAuthorizationUrl();
             }
             if (array_key_exists('refreshUrl', $fobj) && empty($fobj['refreshUrl'])) {
-                throw new Exception('Missing Security OAuth2 refreshUrl');
+                throw new \RESTling\Exception\Security\OpenApi\MissingRefreshUrl();
             }
         }
         if (array_key_exists("password", $flow)) {
             $hasFlow = true;
             $fobj = $flow["password"];
             if (!array_key_exists('scopes', $fobj) || empty($fobj['scopes'])) {
-                throw new Exception('Missing Security OAuth2 Scopes');
+                throw new E\RESTling\Exception\Security\OpenApi\MissingOauth2Scopes();
             }
             if (!array_key_exists('tokenUrl', $fobj) || empty($fobj['tokenUrl'])) {
-                throw new Exception('Missing Security OAuth2 tokenUrl');
+                throw new \RESTling\Exception\Security\OpenApi\MissingTokenUrl();
             }
             if (array_key_exists('refreshUrl', $fobj) && empty($fobj['refreshUrl'])) {
-                throw new Exception('Missing Security OAuth2 refreshUrl');
+                throw new \RESTling\Exception\Security\OpenApi\MissingRefreshUrl();
             }
         }
         if (array_key_exists("authorizationCode", $flow)) {
             $hasFlow = true;
             $fobj = $flow["authorizationCode"];
             if (!array_key_exists('scopes', $fobj) || empty($fobj['scopes'])) {
-                throw new Exception('Missing Security OAuth2 Scopes');
+                throw new \RESTling\Exception\Security\OpenApi\MissingOauth2Scopes();
             }
             if (!array_key_exists('authorizationUrl', $fobj) || empty($fobj['authorizationUrl'])) {
-                throw new Exception('Missing Security OAuth2 authorizationUrl');
-            }
+                throw new \RESTling\Exception\Security\OpenApi\MissingAuthorizationUrl();
             if (!array_key_exists('tokenUrl', $fobj) || empty($fobj['tokenUrl'])) {
-                throw new Exception('Missing Security OAuth2 tokenUrl');
+                throw new \RESTling\Exception\Security\OpenApi\MissingTokenUrl();
             }
             if (array_key_exists('refreshUrl', $fobj) && empty($fobj['refreshUrl'])) {
-                throw new Exception('Missing Security OAuth2 refreshUrl');
+                throw new \RESTling\Exception\Security\OpenApi\MissingRefreshUrl();
             }
         }
         if (array_key_exists("clientCredentials", $flow)) {
             $hasFlow = true;
             $fobj = $flow["clientCredentials"];
             if (!array_key_exists('scopes', $fobj) || empty($fobj['scopes'])) {
-                throw new Exception('Missing Security OAuth2 Scopes');
+                throw new \RESTling\Exception\Security\OpenApi\MissingOauth2Scopes();
             }
             if (!array_key_exists('tokenUrl', $fobj) || empty($fobj['tokenUrl'])) {
-                throw new Exception('Missing Security OAuth2 tokenUrl');
+                throw new \RESTling\Exception\Security\OpenApi\MissingTokenUrl();
             }
             if (array_key_exists('refreshUrl', $fobj) && empty($fobj['refreshUrl'])) {
-                throw new Exception('Missing Security OAuth2 refreshUrl');
+                throw new \RESTling\Exception\Security\OpenApi\MissingRefreshUrl();
             }
         }
         if (!$hasFlow) {
-            throw new Exception('Missing Security Flow Definition');
+            throw new \RESTling\Exception\Security\OpenApi\MissingOauth2FlowDefinition();
         }
     }
 }

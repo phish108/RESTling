@@ -1,7 +1,7 @@
 <?php
-namespace RESTling;
+namespace RESTling\Interfaces;
 
-interface SecurityInterface {
+interface Security {
     public function validate($model, $input);
     public function verify($model, $input);
     public function passes();

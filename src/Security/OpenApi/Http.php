@@ -17,27 +17,27 @@ class Http extends \RESTling\Security\OpenApi {
 
     protected function validateScheme() {
         if (!$this->has("scheme", ["Basic", "Bearer", "Digest", "HOBA", "SCRAM"])) {
-            throw new Exception('Invalid Security Authorization Scheme');
+            throw new \RESTling\Exception\Security\OpenApi\InvalidScheme();
         }
 
         $type = $this->get("scheme");
         if ($type == "Bearer" && $this->has("bearerFormat")) {
             if ($this->has("bearerFormat", ["bearer", "Bearer", "jwt", "JWT"])) {
-                throw new Exception('Invalid Security Bearer Format Hint');
+                throw new \RESTling\Exception\Security\OpenApi\InvalidBearerHint();
             }
             $type = ucfirst(strtolower($this->get("bearerFormat")));
         }
 
         $classname = "\\RESTling\\Security\\" . $type;
         if (!class_exists($classname, true)) {
-            throw new Exception("Not Implemented");
+            throw new \RESTling\Exception\NotImplemented();
         }
 
         try {
             $this->handler = new $classname();
         }
         catch (Exception $err) {
-            throw new Exception("Security Scheme $type Broken");
+            throw new \RESTling\Exception\Security\OpenApi\SchemeHandlerBroken();
         }
     }
 }

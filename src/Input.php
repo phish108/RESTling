@@ -4,7 +4,7 @@ namespace RESTling;
 
 use \League\JsonGuard\Validator as JSONValidator;
 
-class Input implements InputInterface {
+class Input implements Interfaces\Input {
     private $input;
     private $query;
     private $queryString;
@@ -149,21 +149,21 @@ class Input implements InputInterface {
         if ($_SERVER["METHOD"] == "PUT") {
             $data = trim(file_get_contents("php://input"));
             if (empty($data)) {
-                throw new Exception("Empty_Input_Data");
+                throw new Exception\EmptyInputData();
             }
 
             $p;
             parse_str($data, $p);
 
             if (empty($p)) {
-                throw new Exception("Empty_Input_Data");
+                throw new Exception\EmptyInputData();
             }
 
             $this->bodyParameters = $p;
         }
-        else {
+        elseif ($_SERVER["METHOD"] == "POST"){
             if (empty($_POST)) {
-                throw new Exception("Empty_Input_Data");
+                throw new Exception\EmptyInputData();
             }
 
             $this->bodyParameters = $_POST;

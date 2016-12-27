@@ -1,7 +1,7 @@
 <?php
-namespace RESTling;
+namespace RESTling\Interfaces;
 
-interface ValidatorInterface {
+interface Validator {
     public function validate($model, $input);
 }
 

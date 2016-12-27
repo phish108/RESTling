@@ -2,7 +2,7 @@
 
 namespace RESTling;
 
-class Output implements OutputInterface {
+class Output implements Interfaces\Output {
     private $contentType = "text/plain";
 
     private $statusCode;

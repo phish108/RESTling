@@ -1,8 +1,8 @@
 <?php
 
-namespace RESTling;
+namespace RESTling\Interfaces;
 
-interface OutputInterface {
+interface Output {
 
     public function setStatus($code);
     public function setContentType($ct);

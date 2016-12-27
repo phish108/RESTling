@@ -1,7 +1,7 @@
 <?php
-namespace RESTling;
+namespace RESTling\Interfaces;
 
-interface ModelInterface {
+interface Model {
     public function setInput($inputObject);
     public function getHeaders();
     public function addError($message);
@@ -20,7 +20,7 @@ interface ModelInterface {
 	public function addWorker($worker);
 
     /**
- 	 * Runs all Workers that have been previously added through addWorker().  
+ 	 * Runs all Workers that have been previously added through addWorker().
  	 *
  	 * @return void
 	 */
