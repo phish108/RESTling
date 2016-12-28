@@ -295,8 +295,8 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     }
 
     /** ***********************************************
-    * Open API functions
-    */
+     * Open API functions
+     */
 
     public function loadConfigFile($fqfn) {
         $this->config = new Config\OpenApi();

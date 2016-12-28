@@ -3,16 +3,11 @@ namespace RESTling;
 
 abstract class Model implements Interfaces\Model {
     protected $data;
-    protected $input;
     private $errors = [];
 
     private $worker = [];
 
     public function __construct(){
-    }
-
-    public function setInput($inputObject) {
-        $this->input = $inputObject;
     }
 
     public function getHeaders() {
