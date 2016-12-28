@@ -92,18 +92,31 @@ class OpenApi {
             throw new \RESTling\Exception\OpenAPI\InvalidConfigurationObject();
         }
 
-        if (empty($oaiObject) ||
-        !array_key_exists("openapi", $oaiObject) ||
-        empty($oaiObject["openapi"])) {
+        if (empty($oaiObject)) {
             throw new \RESTling\Exception\OpenAPI\MissingVersion();
         }
 
-        $version = explode(".",  $oaiObject["openapi"]);
+        $oaikeys = array_keys($oaiObject);
+        if (!(in_array("openapi", $oaikeys) || in_array("swagger", $oaikeys))) {
+            throw new \RESTling\Exception\OpenAPI\MissingVersion();
+        }
+
+        if (array_key_exists("openapi", $oaiObject)) {
+            $strVersion = $oaiObject["openapi"];
+        }
+        elseif (array_key_exists("swagger", $oaiObject)) {
+            $strVersion = $oaiObject["swagger"];
+        }
+        if(empty($strVersion)) {
+            throw new \RESTling\Exception\OpenAPI\MissingVersion();
+        }
+
+        $version = explode(".",  $strVersion);
         if (count($version) != 3) {
             throw new \RESTling\Exception\OpenAPI\InvalidVersion();
         }
 
-        if ($version[0] < 3) {
+        if ($version[0] < 2) {
             throw new \RESTling\Exception\OpenAPI\VersionUnsupported();
         }
 
