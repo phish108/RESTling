@@ -101,10 +101,12 @@ class OpenApi {
             throw new \RESTling\Exception\OpenAPI\MissingVersion();
         }
 
+        $type = "openapi";
         if (array_key_exists("openapi", $oaiObject)) {
             $strVersion = $oaiObject["openapi"];
         }
         elseif (array_key_exists("swagger", $oaiObject)) {
+            $type = "swagger";
             $strVersion = $oaiObject["swagger"];
         }
         if(empty($strVersion)) {
@@ -117,6 +119,9 @@ class OpenApi {
         }
 
         if ($version[0] < 2) {
+            throw new \RESTling\Exception\OpenAPI\VersionUnsupported();
+        }
+        elseif ($type == "openapi" && $version[0] < 3) {
             throw new \RESTling\Exception\OpenAPI\VersionUnsupported();
         }
 
