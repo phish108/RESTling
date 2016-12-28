@@ -31,7 +31,7 @@ abstract class OpenApi extends \RESTling\Security implements OpenApiInterface {
     final public function setScheme($cfgScheme) {
         if (is_array($cfgScheme) && !empty($cfgScheme)) {
             $this->scheme = $cfgScheme;
-            if (!$this->has('type', ['apiKey', 'http', 'oauth2', 'openIdConnect'])) {
+            if (!$this->has('type', ['basic', 'apiKey', 'http', 'oauth2', 'openIdConnect'])) {
                 throw new \RESTling\Exception\Security\OpenApi\InvalidScheme();
             }
 
