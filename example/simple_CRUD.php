@@ -26,13 +26,13 @@ class RestlingTest extends \RESTling\Model
     public function put()
     {
         $this->data = 'put ok';
-        return "Created"; // return created error
+        throw new \RESTling\Exception\Created(); // return created error
     }
 
     public function delete()
     {
         error_log("delete");
-        return "Gone"; // return Gone error
+        throw new \RESTling\Exception\Gone(); // return Gone error
     }
 }
 
