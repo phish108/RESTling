@@ -12,8 +12,11 @@ class Exception extends \Exception{
     public function __construct() {
         $cls = explode('\\', get_class($this)); // actual classname
         $mName = array_pop($cls);
-        $message = join(" ", preg_split('/(?=[A-Z])/',$mName));
-        parent::__construct($message, 1);
+        $aMsg = preg_split('/(?=[A-Z])/',$mName);
+        if (empty($aMsg[0])) {
+            array_shift($aMsg);
+        }
+        parent::__construct(join(" ", $aMsg), 1);
     }
 }
 
