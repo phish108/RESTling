@@ -102,13 +102,14 @@ class OpenApi {
         }
 
         $oaikeys = array_keys($oaiObject);
+
         if (!(in_array("openapi", $oaikeys) || in_array("swagger", $oaikeys))) {
             throw new \RESTling\Exception\OpenAPI\MissingVersion();
         }
 
-        $type = "openapi";
         if (array_key_exists("openapi", $oaiObject)) {
             $strVersion = $oaiObject["openapi"];
+
             if(empty($strVersion)) {
                 throw new \RESTling\Exception\OpenAPI\MissingVersion();
             }
@@ -117,8 +118,8 @@ class OpenApi {
             }
         }
         elseif (array_key_exists("swagger", $oaiObject)) {
-            $type = "swagger";
             $strVersion = $oaiObject["swagger"];
+
             if(empty($strVersion)) {
                 throw new \RESTling\Exception\OpenAPI\MissingVersion();
             }
