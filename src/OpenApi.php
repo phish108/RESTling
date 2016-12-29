@@ -334,8 +334,9 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     */
     private function preprocessPaths() {
         $this->pathMap = [];
-        if ($this->model && method_exists($this->model, "getPathMap")) {
-            $this->pathMap = $this->model->getPathMap();
+        $model = $this->getModel();
+        if ($model && method_exists($model, "getPathMap")) {
+            $this->pathMap = $model->getPathMap();
             return;
         }
 

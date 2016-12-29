@@ -78,6 +78,10 @@ class Service implements Interfaces\Service
         $this->model = $m;
     }
 
+    final protected function getModel() {
+        return $this->model;
+    }
+
     final public function setSecurityModel($model, $secure = false) {
         if ($secure && $this->securityModel) {
             throw new Exception\ModelAlreadySet();
@@ -460,7 +464,6 @@ class Service implements Interfaces\Service
         if(!$this->outputHandler) {
             $this->outputHandler = new BaseResponder();
         }
-
         if (!empty($this->error)) {
             switch ($this->error) {
                 case "Missing_Content_Parser":
@@ -490,7 +493,7 @@ class Service implements Interfaces\Service
                 case "Not Acceptable":
                     $this->responseCode = 406;
                     break;
-                case "Continue":
+                case "Continue Request":
                     $this->responseCode = 100;
                     break;
                 case "Created":
