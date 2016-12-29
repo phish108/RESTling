@@ -249,6 +249,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
 
     protected function validateInput() {
         $this->validateParameters();
+
         $ct = $this->inputHandler->getContentType();
 
         if (array_key_exists("requestBody", $this->activeMethod) &&
@@ -256,7 +257,8 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
             array_key_exists($ct, $this->activeMethod["requestBody"]["content"]) &&
             array_key_exists("schema", $this->activeMethod["requestBody"]["content"][$ct])) {
 
-            $this->inputHandler->verifyBodySchema($this->activeMethod["requestBody"]["content"][$ct]["schema"]);
+            $schema = $this->config->expandObject($this->activeMethod["requestBody"]["content"][$ct]["schema"]);
+            $this->inputHandler->verifyBodySchema($schema);
         }
     }
 

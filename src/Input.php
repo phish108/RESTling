@@ -151,10 +151,12 @@ class Input implements Interfaces\Input {
         if (empty($this->bodyParameters)) {
             throw new Exception\InvalidInputFormat();
         }
-        $data = $this->bodyParameters;
-        $validator = new JSONValidator($data, $schema);
-        if ($validator->fails()) {
-            throw new Exception\InvalidInputFormat();
+        if (!empty($schema)) {
+            $data = $this->bodyParameters;
+            $validator = new JSONValidator($data, $schema);
+            if ($validator->fails()) {
+                throw new Exception\InvalidInputFormat();
+            }
         }
     }
 
