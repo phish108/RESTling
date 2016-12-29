@@ -169,7 +169,6 @@ class OpenApi {
         return $this->references[$reference];
     }
 
-
     /**
      *
      */
