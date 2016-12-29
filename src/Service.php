@@ -355,9 +355,9 @@ class Service implements Interfaces\Service
         // determine the output handler
         // get accept content types from the client
         $h = getallheaders();
+        $act = [];
         if (array_key_exists("Accept", $h)) {
             $acp = explode(",", $h["Accept"]);
-            $act = [];
 
             foreach ($acp as $ct) {
                 $tmpArray = explode(";", $ct, 2);
@@ -422,6 +422,9 @@ class Service implements Interfaces\Service
      *
      */
     protected function processResponse() {
+        if(!$this->outputHandler) {
+            $this->outputHandler = new BaseResponder();
+        }
         // prepare out put after error handling
         if ($this->responseCode) {
             $this->outputHandler->setStatus($this->responseCode);
@@ -467,9 +470,6 @@ class Service implements Interfaces\Service
      *
      */
     protected function handleError() {
-        if(!$this->outputHandler) {
-            $this->outputHandler = new BaseResponder();
-        }
         if (!empty($this->error)) {
             switch ($this->error) {
                 case "Missing_Content_Parser":

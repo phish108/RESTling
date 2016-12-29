@@ -219,15 +219,25 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         }
 
         // filter possible output types
-        $this->activeMethod["responses"] = $this->expandObject($this->activeMethod["responses"]);
+        $v = $this->apiConfig->getApiVersion();
+        if ((substr($v, 0, 3 ) === "3.0") &&
+            array_key_exists("responses", $this->activeMethod)) {
 
-        foreach ($this->activeMethod["responses"] as $k => $v) {
-            if (array_key_exists("content", $v)) {
-                foreach ($v["content"] as $ct => $schema) {
-                    if (!in_array($ct,$this->availableOutputTypes)) {
-                        $this->availableOutputTypes[] = $ct;
+            $this->activeMethod["responses"] = $this->expandObject($this->activeMethod["responses"]);
+            foreach ($this->activeMethod["responses"] as $k => $v) {
+                if (array_key_exists("content", $v)) {
+                    foreach ($v["content"] as $ct => $schema) {
+                        if (!in_array($ct,$this->availableOutputTypes)) {
+                            $this->availableOutputTypes[] = $ct;
+                        }
                     }
                 }
+            }
+        }
+        elseif ($v == "2.0" && array_key_exists("produces", $this->activeMethod)) {
+            $this->preferredOutputType = $this->activeMethod["produces"][0];
+            foreach ($this->activeMethod["produces"] as $ct) {
+                $this->availableOutputTypes[] = $ct;
             }
         }
     }
@@ -235,12 +245,24 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     protected function parseInput()
     {
         // restrict the content types if the API requests it
-        if (array_key_exists("requestBody", $this->activeMethod) &&
-            array_key_exists("content", $this->activeMethod["requestBody"]) &&
-            !empty($this->activeMethod["requestBody"]["content"])) {
+        $v = $this->apiConfig->getApiVersion();
 
-            foreach (array_keys($this->activeMethod["requestBody"]["content"]) as $ct) {
-                $this->allowedContentTypes[] = $ct;
+        if (substr($v, 0, 3 ) === "3.0") {
+            if (array_key_exists("requestBody", $this->activeMethod) &&
+                array_key_exists("content", $this->activeMethod["requestBody"]) &&
+                !empty($this->activeMethod["requestBody"]["content"])) {
+
+                foreach (array_keys($this->activeMethod["requestBody"]["content"]) as $ct) {
+                    $this->allowedContentTypes[] = $ct;
+                }
+            }
+        }
+        elseif ($v == "2.0") {
+            if (array_key_exists("consumes", $this->activeMethod) &&
+                !empty($this->activeMethod["consumes"])) {
+                    foreach ($this->activeMethod["consumes"] as $ct) {
+                        $this->allowedContentTypes[] = $ct;
+                    }
             }
         }
 

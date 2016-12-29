@@ -2,10 +2,15 @@
 namespace RESTling\Config;
 
 class OpenApi {
+    private $version;
     private $config = [];
     private $references = [];
 
     public function __construct() {
+    }
+
+    public function getApiVersion() {
+        return $this->version;
     }
 
     public function getInfo() {
@@ -104,26 +109,25 @@ class OpenApi {
         $type = "openapi";
         if (array_key_exists("openapi", $oaiObject)) {
             $strVersion = $oaiObject["openapi"];
+            if(empty($strVersion)) {
+                throw new \RESTling\Exception\OpenAPI\MissingVersion();
+            }
+            elseif (substr($strVersion, 0, 3 ) === "3.0") {
+                throw new \RESTling\Exception\OpenAPI\InvalidVersion();
+            }
         }
         elseif (array_key_exists("swagger", $oaiObject)) {
             $type = "swagger";
             $strVersion = $oaiObject["swagger"];
-        }
-        if(empty($strVersion)) {
-            throw new \RESTling\Exception\OpenAPI\MissingVersion();
-        }
-
-        $version = explode(".",  $strVersion);
-        if (count($version) != 3) {
-            throw new \RESTling\Exception\OpenAPI\InvalidVersion();
+            if(empty($strVersion)) {
+                throw new \RESTling\Exception\OpenAPI\MissingVersion();
+            }
+            elseif ($strVersion != "2.0") {
+                throw new \RESTling\Exception\OpenAPI\InvalidVersion();
+            }
         }
 
-        if ($version[0] < 2) {
-            throw new \RESTling\Exception\OpenAPI\VersionUnsupported();
-        }
-        elseif ($type == "openapi" && $version[0] < 3) {
-            throw new \RESTling\Exception\OpenAPI\VersionUnsupported();
-        }
+        $this->version = $strVersion;
 
         if (!array_key_exists("info", $oaiObject)){
             throw new \RESTling\Exception\OpenAPI\MissingInfo();
