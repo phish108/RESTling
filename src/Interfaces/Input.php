@@ -79,6 +79,9 @@ interface Input {
      * @throws \RESTling\Exception\BrokenInput - if input cannot be processed
 	 */
 	public function parse();
+
+    public function setContentType($contentType);
+    public function getContentType();
 }
 
 ?>

@@ -234,19 +234,30 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
 
     protected function parseInput()
     {
-        parent::parseInput();
-        if ($this->inputHandler) {
-            $this->inputHandler->setPathParameters($this->pathParameters);
-            if (!empty($this->securityHandler)) {
-                foreach ($this->securityHandler as $handler) {
-                    $handler->setInput($this->inputHandler);
-                }
+        // restrict the content types if the API requests it
+        if (array_key_exists("requestBody", $this->activeMethod) &&
+            array_key_exists("content", $this->activeMethod["requestBody"]) &&
+            !empty($this->activeMethod["requestBody"]["content"])) {
+
+            foreach (array_keys($this->activeMethod["requestBody"]["content"]) as $ct) {
+                $this->allowedContentTypes[] = $ct;
             }
         }
+
+        parent::parseInput();
     }
 
     protected function validateInput() {
         $this->validateParameters();
+        $ct = $this->inputHandler->getContentType();
+
+        if (array_key_exists("requestBody", $this->activeMethod) &&
+            array_key_exists("content", $this->activeMethod["requestBody"]) &&
+            array_key_exists($ct, $this->activeMethod["requestBody"]["content"]) &&
+            array_key_exists("schema", $this->activeMethod["requestBody"]["content"][$ct])) {
+
+            $this->inputHandler->verifyBodySchema($this->activeMethod["requestBody"]["content"][$ct]["schema"]);
+        }
     }
 
     private function validateParameters() {

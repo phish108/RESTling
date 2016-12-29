@@ -47,6 +47,7 @@ class Service implements Interfaces\Service
     protected $preferredOutputType;
     protected $availableOutputTypes = [];
     protected $path_info = "";
+    protected $allowedContentTypes = [];
 
     /**
      * @public constructor()
@@ -290,6 +291,10 @@ class Service implements Interfaces\Service
             $ctHead = explode(";", $_SERVER['CONTENT_TYPE'], 2);
             $contentType = array_shift($ctHead);
 
+            if (!empty($this->allowedContentTypes) && !in_array($contentType, $this->allowedContentTypes)) {
+                throw new Exception\InvalidContentType();
+            }
+
             if (array_key_exists($contentType, $this->inputContentTypeMap)) {
                 $className = $this->inputContentTypeMap[$contentType];
 
@@ -299,6 +304,7 @@ class Service implements Interfaces\Service
 
                 $this->inputHandler = new $className();
                 $this->inputHandler->parse();
+                $this->inputHandler->setContentType($contentType);
             }
         }
 
@@ -318,7 +324,7 @@ class Service implements Interfaces\Service
         if (!empty($this->securityHandler)) {
             try {
                 foreach ($this->securityHandler as $handler) {
-                    $handler->verify($this->model);
+                    $handler->verify($this->model, $this->inputHandler);
                 }
             }
             catch (Exception $err) {

@@ -11,6 +11,7 @@ class Input implements Interfaces\Input {
     private $cookieParameters = [];
     private $pathParameters   = [];
     private $headerParameters = [];
+    private $contentType;
 
     private $isMulti = false;
 
@@ -146,6 +147,17 @@ class Input implements Interfaces\Input {
         return true;
     }
 
+    public function verifyBodySchema($schema) {
+        if (empty($this->bodyParameters)) {
+            throw new Exception\InvalidInputFormat();
+        }
+        $data = $this->bodyParameters;
+        $validator = new JSONValidator($data, $schema);
+        if ($validator->fails()) {
+            throw new Exception\InvalidInputFormat();
+        }
+    }
+
     public function parse() {
         if ($_SERVER["METHOD"] == "PUT") {
             $data = trim(file_get_contents("php://input"));
@@ -170,6 +182,14 @@ class Input implements Interfaces\Input {
             $this->bodyParameters = $_POST;
         }
         return "";
+    }
+
+    final public function setContentType($ct) {
+        $this->contentType = $ct;
+    }
+
+    final public function getContentType() {
+        return $this->contentType;
     }
 }
 
