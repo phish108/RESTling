@@ -2,7 +2,6 @@
 namespace RESTling\Interfaces;
 
 interface Model {
-    public function setInput($inputObject);
     public function getHeaders();
     public function addError($message);
 
