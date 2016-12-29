@@ -8,7 +8,6 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     * Properties
     */
 
-    private $orderedPaths = [];   ///< helper for request path discovery
     private $pathMap;             ///< helper for operation mapping
     private $activePath;          ///< helper for request handling
     private $activeMethod;        ///< helper for request handling
@@ -90,6 +89,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
             $this->loadTitleModel($cn);
         }
 
+        $this->preprocessPaths();
         // verify the model is present
         return parent::verifyModel();
     }
@@ -121,14 +121,15 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
             $path = "/";
         }
 
-        foreach ($this->orderedPaths as $pattern) {
+        $this->activePath = null;
+        for ($i = 0; $i < count($this->pathMap) && !$this->activePath; $i++ ) {
+            $pathObject = $this->pathMap[$i];
             $matches = [];
             // match path
-            if (preg_match($pattern, $path, $matches)) {
+            if (preg_match($pathObject["pattern"], $path, $matches)) {
                 // remove the global match
                 array_shift($matches);
 
-                $pathObject       = $this->pathMap[$pattern];
                 $this->activePath = $pathObject["pathitem"];
 
                 // extract path parameters
@@ -140,8 +141,6 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
                 if (count($matches)) {
                     $this->path_info = join("/", $matches);
                 }
-
-                break;
             }
         }
 
@@ -302,7 +301,6 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         $this->config = new Config\OpenApi();
         try {
             $this->config->loadConfigFile($fqfn);
-            $this->preprocessPaths($this->config->getPaths());
         }
         catch (Exception $err) {
             $this->error = $err->getMessage();
@@ -313,7 +311,6 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         $this->config = new Config\OpenApi();
         try {
             $this->config->loadConfigString($cfgString);
-            $this->preprocessPaths($this->config->getPaths());
         }
         catch (Exception $err) {
             $this->error = $err->getMessage();
@@ -324,7 +321,6 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         $this->config = new Config\OpenApi();
         try {
             $this->config->loadApiObject($oaiObject);
-            $this->preprocessPaths($this->config->getPaths());
         }
         catch (Exception $err) {
             $this->error = $err->getMessage();
@@ -336,8 +332,15 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     *
     * This method transforms the templated paths for PREG path detection
     */
-    private function preprocessPaths($paths) {
-        $this->paths = [];
+    private function preprocessPaths() {
+        $this->pathMap = [];
+        if ($this->model && method_exists($this->model, "getPathMap")) {
+            $this->pathMap = $this->model->getPathMap();
+            return;
+        }
+
+        $paths = $this->config->getPaths();
+        $orderMap = [];
 
         foreach ($paths as $path => $pathobj) {
             // translate the path into a regex, and filternames
@@ -361,7 +364,8 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
 
                 $repath = '/^' . implode('\\/', $rpath) . '(?:\\/(.+))?$/';
 
-                $this->pathMap[$repath] = [
+                $orderMap[] = [
+                    "pattern" => $repath,
                     "pathitem" => $pathobj,
                     "vars" => $vnames,
                     "path" => $path
@@ -369,14 +373,8 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
             }
         }
 
-        // speed up the matching
-        $array = [];
-        foreach ($this->pathMap as $pattern => $value) {
-            $array[] = $pattern;
-        }
-
-        usort($array, function ($a,$b){return strlen($b) - strlen($a);});
-        $this->orderedPaths = $array;
+        usort($orderMap, function ($a,$b){return strlen($b["pattern"]) - strlen($a["pattern"]);});
+        $this->pathMap = $orderMap;
     }
 
     /**
