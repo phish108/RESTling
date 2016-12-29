@@ -4,7 +4,7 @@
     "description": "A flexible framework for REST services.",
     "homepage": "https://github.com/phish108/RESTling",
     "license": "AGPL-3.0",
-    "version": "v2.0.1",
+    "version": "2.0.2",
     "autoload": {
         "psr-4": {
             "RESTling\\":  "src/"
