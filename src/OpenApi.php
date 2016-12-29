@@ -13,7 +13,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     private $activeMethod;        ///< helper for request handling
     private $pathParameters = []; ///< helper to pass path parameters to the inputHandler
 
-    private $config;              ///< keeps the OpenAPI configuration
+    protected $apiConfig;              ///< keeps the OpenAPI configuration
 
     /**
     * @protected @method loadTagModel($taglist)
@@ -69,8 +69,8 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     protected function verifyModel()
     {
         // load tag model
-        $tags = $this->config->getTags();
-        $info = $this->config->getInfo();
+        $tags = $this->apiConfig->getTags();
+        $info = $this->apiConfig->getInfo();
         if (!empty($tags)) {
 
             $tl = [];
@@ -183,7 +183,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
                 // note multiple security requirements may exist
                 // NONE of these requirements must reject the authorization and access.
                 // different security handers may reject either one.
-                $securityDefinition = $this->config->getComponent($sec);
+                $securityDefinition = $this->apiConfig->getComponent($sec);
 
                 if (empty($scopes)) {
                     throw new Exception\OpenAPI\MissingSecurityRequirements();
@@ -257,7 +257,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
             array_key_exists($ct, $this->activeMethod["requestBody"]["content"]) &&
             array_key_exists("schema", $this->activeMethod["requestBody"]["content"][$ct])) {
 
-            $schema = $this->config->expandObject($this->activeMethod["requestBody"]["content"][$ct]["schema"]);
+            $schema = $this->apiConfig->expandObject($this->activeMethod["requestBody"]["content"][$ct]["schema"]);
             $this->inputHandler->verifyBodySchema($schema);
         }
     }
@@ -311,9 +311,9 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
      */
 
     public function loadConfigFile($fqfn) {
-        $this->config = new Config\OpenApi();
+        $this->apiConfig = new Config\OpenApi();
         try {
-            $this->config->loadConfigFile($fqfn);
+            $this->apiConfig->loadConfigFile($fqfn);
         }
         catch (Exception $err) {
             $this->error = $err->getMessage();
@@ -321,9 +321,9 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     }
 
     public function loadConfigString($cfgString) {
-        $this->config = new Config\OpenApi();
+        $this->apiConfig = new Config\OpenApi();
         try {
-            $this->config->loadConfigString($cfgString);
+            $this->apiConfig->loadConfigString($cfgString);
         }
         catch (Exception $err) {
             $this->error = $err->getMessage();
@@ -331,9 +331,9 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     }
 
     public function loadApiObject($oaiObject) {
-        $this->config = new Config\OpenApi();
+        $this->apiConfig = new Config\OpenApi();
         try {
-            $this->config->loadApiObject($oaiObject);
+            $this->apiConfig->loadApiObject($oaiObject);
         }
         catch (Exception $err) {
             $this->error = $err->getMessage();
@@ -353,7 +353,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
             return;
         }
 
-        $paths = $this->config->getPaths();
+        $paths = $this->apiConfig->getPaths();
         $orderMap = [];
 
         foreach ($paths as $path => $pathobj) {
@@ -397,7 +397,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     * This method expands an OAI object if necessary.
     */
     private function expandObject($object) {
-        return $this->config->expandObject($object);
+        return $this->apiConfig->expandObject($object);
     }
 }
 
