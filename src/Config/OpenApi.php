@@ -14,17 +14,24 @@ class OpenApi {
     }
 
     public function getInfo() {
-        if (array_key_exists('info',$this->config) &&
+        if (array_key_exists('info', $this->config) &&
             !empty($this->config['info'])) {
             return $this->config['info'];
         }
         return null;
     }
 
-    public function getTags() {
-        if (array_key_exists('tags',$this->config) &&
-            !empty($this->config['tags'])) {
-            return $this->config['tags'];
+    public function getTags($flatten = false) {
+        $tags = null;
+        if (array_key_exists('tags', $this->config)) {
+            $tags = [];
+            foreach ($this->config["tags"] as $tag) {
+                if ($flatten) {
+                    $tag = $tag["name"];
+                }
+                $tags[] = $tag;
+            }
+            return $tags;
         }
         return null;
     }
