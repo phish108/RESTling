@@ -202,7 +202,6 @@ class Service implements Interfaces\Service
             "findOperation",
             "parseInput",
             "validateAuthorization",
-            "verifyAccess",
             "validateInput",
             "performOperation",
             "prepareOutputProcessor"
@@ -250,7 +249,7 @@ class Service implements Interfaces\Service
     /**
      *
      */
-    private function validateAuthorization() {
+    protected function validateAuthorization() {
         if (!empty($this->securityHandler)) {
             $validation = false;
 
@@ -275,6 +274,28 @@ class Service implements Interfaces\Service
             if (!$validation) {
                 // at least one security handler must accept
                 throw new Exception\AuthorizationRequired();
+            }
+
+            $validation = false;
+            foreach ($this->securityHandler as $handler) {
+                // NOTE: The operation model MUST provide the scope validation
+                // this is because the different platforms don't allow
+                // generalizing the privilege system.
+                try {
+                    $handler->verify($this->model, $this->inputHandler);
+                }
+                catch (Exception $err) {
+                    // explicit failure means that the authorization MUST NOT
+                    // be granted
+                    $this->outputHandler->addTraceback($err->getMessage());
+                    throw new Exception\Forbidden();
+                }
+                $validation = ($validation || $handler->passes());
+            }
+
+            if (!$validation) {
+                // at least one security handler must accept the scope
+                throw new Exception\Forbidden();
             }
         }
     }
@@ -310,26 +331,6 @@ class Service implements Interfaces\Service
 
         if (!$this->inputHandler) {
             $this->inputHandler = new BaseParser();
-        }
-    }
-
-    /**
-     * Allows each security handler to process its scope requirements with
-     * the model.
-     *
-     * If a security handler does not verify a scope, it MUST throw an
-     * exception.
-     */
-    private function verifyAccess() {
-        if (!empty($this->securityHandler)) {
-            try {
-                foreach ($this->securityHandler as $handler) {
-                    $handler->verify($this->model, $this->inputHandler);
-                }
-            }
-            catch (Exception $err) {
-                throw new Exception\Forbidden();
-            }
         }
     }
 
