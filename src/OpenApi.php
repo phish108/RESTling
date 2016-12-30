@@ -29,11 +29,13 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     * @throws Exception 'Not a RESTling\\Model'
     */
     protected function loadTagModel($taglist) {
-        // naive namespacing
-        $modelName = '\\' . join('\\', $taglist);
+        if ($this->noModel() && !empty($taglist)) {
 
-        if (class_exists($modelName, true)) {
-            $this->setModel(new $modelName(), true);
+            $modelName = '\\' . join('\\', $taglist);
+
+            if (class_exists($modelName, true)) {
+                $this->setModel(new $modelName(), true);
+            }
         }
     }
 
@@ -51,9 +53,11 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     * @throws Exception 'Not a RESTling\\Model'
     */
     protected function loadTitleModel($modelName) {
-        $fqModelName = '\\' . $modelName;
-        if (class_exists($fqModelName, true)) {
-            $this->setModel(new $fqModelName(), true);
+        if ($this->noModel() && !empty($modelName)) {
+            $fqModelName = '\\' . $modelName;
+            if (class_exists($fqModelName, true)) {
+                $this->setModel(new $fqModelName(), true);
+            }
         }
     }
 
@@ -69,16 +73,11 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     protected function verifyModel()
     {
         // load tag model
-        $tags = $this->apiConfig->getTags();
+        $tags = $this->apiConfig->getTags(true);
         $info = $this->apiConfig->getInfo();
-        if (!empty($tags)) {
 
-            $tl = [];
-            foreach ($tags as $tag) {
-                $tl[] = $tag["name"];
-            }
-            $this->loadTagModel($tl);
-        }
+        $this->loadTagModel($tags);
+
         // load title model (camel cased title as classname)
         if ($info && array_key_exists('title',$info)) {
             $acn = explode(" ", $info['title']);
