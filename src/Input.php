@@ -22,7 +22,32 @@ class Input implements Interfaces\Input {
 
         if(!$multi) {
             $this->queryString     = $_SERVER["QUERY_STRING"];
-            $this->query           = $_GET;
+            // process the query string because $_GET is faulty for multiple
+            // query parameters occurences
+            $aQ = explode("&", $this->queryString);
+            $oQ = [];
+            // don't process if there is no = for a single parameters
+            if (count($aQ) > 1 || (count($aQ) == 1 && strstr($aQ[0], "=") !== false)) {
+                foreach ($aQ as $qparam) {
+                    $aQparam = explode("=", $qparam, 2);
+                    if (count($aQparam) == 1) {
+                        // this case may happen for multi parameters where one
+                        // does not contain an '=' delimitor
+                        $aQparam[] = "";
+                    }
+                    if (array_key_exists($aQparam[0], $oQ)) {
+                        if (!is_array($oQ[$aQparam[0]])) {
+                            // arrayfy if not an array already
+                            $oQ[$aQparam[0]] = [$oQ[$aQparam[0]]];
+                        }
+                        $oQ[$aQparam[0]][] = $aQparam[1];
+                    }
+                    else {
+                        $oQ[$aQparam[0]] = $aQparam[1];
+                    }
+                }
+            }
+            $this->query           = $oQ;
             $this->cookieParameter = $_COOKIE;
             $this->headerParameter = getallheaders();
         }
@@ -138,10 +163,24 @@ class Input implements Interfaces\Input {
 
         if ($this->hasParameter($pname, $sources)) {
             $data = $this->getParameter($pname, $sources);
-            $validator = new JSONValidator($data, $schema);
 
-            if ($validator->fails()) {
-                return false;
+            // some parameters may occur more than once in the query
+            // only if explicity query parameters are tested
+            if ($source === "query" && is_array($data)) {
+                foreach ($data as $dataInstance) {
+                    $validator = new JSONValidator($dataInstance, $schema);
+
+                    if ($validator->fails()) {
+                        return false;
+                    }
+                }
+            }
+            else {
+                $validator = new JSONValidator($data, $schema);
+
+                if ($validator->fails()) {
+                    return false;
+                }
             }
         }
         return true;

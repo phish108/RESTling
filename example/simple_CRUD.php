@@ -13,9 +13,19 @@ require_once __DIR__."/../vendor/autoload.php";
 // implement
 class RestlingTest extends \RESTling\Model
 {
-    public function get()
+    public function get($input)
     {
-        $this->data = 'get ok';
+        $this->data = 'get ok ';
+
+        if ($input->hasParameter("foo", "query")) {
+            $d = $input->getParameter("foo", "query");
+            if (is_array($d)) {
+                $this->data .= "multiple " . join(", ", $d);
+            }
+            else {
+                $this->data .= "singleton $d";
+            }
+        }
     }
 
     public function post()
