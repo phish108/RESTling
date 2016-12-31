@@ -343,8 +343,6 @@ class Service implements Interfaces\Service
             throw new Exception\NotImplemented();
         }
 
-        // $this->model->setInput($this->inputHandler);
-
         call_user_func(array($this->model,
                              $this->operation), $this->inputHandler);
     }
