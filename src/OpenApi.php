@@ -297,6 +297,14 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
                     throw new Exception\OpenAPI\MissingRequiredParameter();
                 }
 
+                if ($this->apiConfig->getVersion() == "2.0" && array_key_exists("type", $param)) {
+                    // the official swagger editor does not allow the schema property
+                    $schema = ["type" => $param["type"]];
+                    if (!$this->inputHandler->hasParameterSchema($param["name"], $param["in"], $schema)) {
+                        throw new Exception\OpenAPI\InvalidParameterFormat();
+                    }
+                }
+
                 if (array_key_exists("schema", $param) &&
                     !$this->inputHandler->hasParameterSchema($param["name"], $param["in"], $param["schema"])) {
                     throw new Exception\OpenAPI\InvalidParameterFormat();
