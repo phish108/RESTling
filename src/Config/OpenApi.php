@@ -5,6 +5,7 @@ class OpenApi {
     private $version;
     private $config = [];
     private $references = [];
+    private $tagModel;
 
     public function __construct() {
     }
@@ -95,11 +96,10 @@ class OpenApi {
             throw new \RESTling\Exception\OpenAPI\InvalidConfiguration();
         }
 
-        $this->loadApiObject($o);
+        $this->loadConfigObject($o);
     }
 
-
-    public function loadApiObject($oaiObject) {
+    public function loadConfigObject($oaiObject) {
         if (!is_array($oaiObject)) {
             throw new \RESTling\Exception\OpenAPI\InvalidConfigurationObject();
         }
@@ -147,6 +147,19 @@ class OpenApi {
         }
 
         $this->config = $oaiObject;
+    }
+
+    public function setTagModel($tagModel) {
+        if (!empty($tagModel) && is_array($tagModel)) {
+            $this->tagModel = $tagModel;
+        }
+    }
+
+    public function getTagModel() {
+        if ($this->tagModel) {
+            return $this->tagModel;
+        }
+        return $this->getTags(true);
     }
 
     /**

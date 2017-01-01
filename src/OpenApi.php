@@ -73,7 +73,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     protected function verifyModel()
     {
         // load tag model
-        $tags = $this->apiConfig->getTags(true);
+        $tags = $this->apiConfig->getTagModel();
         $info = $this->apiConfig->getInfo();
 
         $this->loadTagModel($tags);
@@ -359,14 +359,22 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         }
     }
 
-    public function loadApiObject($oaiObject) {
+    public function loadConfigObject($cfgObject) {
         $this->apiConfig = new Config\OpenApi();
         try {
-            $this->apiConfig->loadApiObject($oaiObject);
+            $this->apiConfig->loadApiObject($cfgObject);
         }
         catch (Exception $err) {
             $this->error = $err->getMessage();
         }
+    }
+
+    public function setApiConfig($oaiConfig) {
+        if (!$oaiConfig || !($oaiConfig instanceof \RESTling\Config\OpenApi)) {
+            throw new \RESTling\Exception\MissingConfiguration();
+        }
+
+        $this->apiConfig = $oaiConfig;
     }
 
     /**
