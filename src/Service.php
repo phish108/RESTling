@@ -334,6 +334,9 @@ class Service implements Interfaces\Service
         }
     }
 
+    protected function validateInput() {
+    }
+
     /**
      *
      */

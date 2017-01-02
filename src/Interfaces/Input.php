@@ -85,6 +85,9 @@ interface Input {
 
     public function addActiveUser($userid);
     public function hasActiveUser($userid);
+
+    public function hasUser();
+    public function getUser();
 }
 
 ?>
