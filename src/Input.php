@@ -247,6 +247,13 @@ class Input implements Interfaces\Input {
         }
         return false;
     }
+
+    final public function hasUser() {
+        if (!empty($this->activeUser)) {
+            return true;
+        }
+        return false;
+    }
 }
 
 ?>
