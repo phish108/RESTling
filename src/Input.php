@@ -13,6 +13,8 @@ class Input implements Interfaces\Input {
     private $headerParameters = [];
     private $contentType;
 
+    private $activeUser = [];
+
     private $isMulti = false;
 
     protected $bodyParameters   = [];
@@ -231,6 +233,19 @@ class Input implements Interfaces\Input {
 
     final public function getContentType() {
         return $this->contentType;
+    }
+
+    final public function addActiveUser($userid) {
+        if ($userid && !in_array($userid, $this->activeUser)) {
+            $this->activeUser[] = $userid;
+        }
+    }
+
+    final public function hasActiveUser($userid) {
+        if (in_array($userid, $this->activeUser)) {
+            return true;
+        }
+        return false;
     }
 }
 

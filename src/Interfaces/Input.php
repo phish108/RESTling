@@ -82,6 +82,9 @@ interface Input {
 
     public function setContentType($contentType);
     public function getContentType();
+
+    public function addActiveUser($userid);
+    public function hasActiveUser($userid);
 }
 
 ?>
