@@ -258,6 +258,10 @@ class Input implements Interfaces\Input {
         }
         return false;
     }
+
+    final public function getBody() {
+        return $this->bodyParameters;
+    }
 }
 
 ?>

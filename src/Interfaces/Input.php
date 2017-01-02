@@ -88,6 +88,13 @@ interface Input {
 
     public function hasUser();
     public function getUser();
+
+    /**
+ 	 * returns the full body object of the request.
+ 	 *
+ 	 * @return array Body object or null if no body is present.
+	 */
+	public function getBody();
 }
 
 ?>
