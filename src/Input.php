@@ -38,6 +38,10 @@ class Input implements Interfaces\Input {
                         // does not contain an '=' delimitor
                         $aQparam[] = "";
                     }
+
+                    $aQparam[0] = urldecode($aQparam[0]);
+                    $aQparam[1] = urldecode($aQparam[1]);
+
                     if (array_key_exists($aQparam[0], $oQ)) {
                         if (!is_array($oQ[$aQparam[0]])) {
                             // arrayfy if not an array already
