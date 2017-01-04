@@ -5,6 +5,7 @@ namespace RESTling;
 use \League\JsonGuard\Validator as JSONValidator;
 
 class Input implements Interfaces\Input {
+    public  $path_info = "";
     private $input;
     private $query;
     private $queryString;

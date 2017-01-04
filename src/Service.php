@@ -326,6 +326,7 @@ class Service implements Interfaces\Service
                 $this->inputHandler = new $className();
                 $this->inputHandler->parse();
                 $this->inputHandler->setContentType($contentType);
+                $this->inputHandler->path_info = $this->path_info;
             }
         }
 
@@ -457,7 +458,7 @@ class Service implements Interfaces\Service
             }
         }
 
-        // get additional model headers
+        // generate the output
         $this->outputHandler->process($this->model);
     }
 
