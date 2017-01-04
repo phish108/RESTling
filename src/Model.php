@@ -56,7 +56,7 @@ abstract class Model implements Interfaces\Model {
  	 *
  	 * @param RESTling\Output $outputModel
 	 */
-    final public function handleData($output)
+    public function handleData($output)
     {
         if ($this->hasData()) {
             if (is_object($output) && method_exists($output, "data")) {
