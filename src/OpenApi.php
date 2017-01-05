@@ -150,6 +150,12 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         // verify method for path
         $m = strtolower($_SERVER['REQUEST_METHOD']);
 
+        if ($m === "post") {
+            if (array_key_exists("method", $_GET)) {
+                $m = strtolower($_GET['method']);
+            }
+        }
+
         if (!array_key_exists($m, $this->activePath)) {
             throw new Exception\NotAllowed();
         }
