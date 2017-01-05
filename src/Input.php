@@ -7,7 +7,7 @@ use \League\JsonGuard\Validator as JSONValidator;
 class Input implements Interfaces\Input {
     public  $path_info = "";
     private $input;
-    private $query;
+    private $queryParameters;
     private $queryString;
     private $cookieParameters = [];
     private $pathParameters   = [];
@@ -54,9 +54,9 @@ class Input implements Interfaces\Input {
                     }
                 }
             }
-            $this->query           = $oQ;
-            $this->cookieParameter = $_COOKIE;
-            $this->headerParameter = getallheaders();
+            $this->queryParameters  = $oQ;
+            $this->cookieParameters = $_COOKIE;
+            $this->headerParameters = getallheaders();
         }
     }
 
@@ -76,6 +76,9 @@ class Input implements Interfaces\Input {
         if ($this->isMulti) {
             $sources = ["body"];
         }
+        if ($source == "formData") {
+            $source = "body";
+        }
 
         if (!empty($source)) {
             if (in_array($source, $sources)) {
@@ -86,76 +89,52 @@ class Input implements Interfaces\Input {
             }
         }
 
+        if (empty($pname)) {
+            return null;
+        }
+
+        $retval = null;
+        if (is_array($pname)) {
+            $retval = [];
+        }
+
         foreach ($sources as $s) {
-            switch ($s) {
-                case "query":
-                    if (array_key_exists($pname, $this->query)) {
-                        return $this->query[$pname];
+            $sname = $s . 'Parameters';
+            if (is_array($pname)) {
+                foreach ($pname as $name) {
+                    if (!empty($name) && array_key_exists($name, $this->$sname)) {
+                        $retval[$name] = $this->$sname[$name];
                     }
-                    break;
-                case "body":
-                    if (array_key_exists($pname, $this->bodyParameters)) {
-                        return $this->bodyParameters[$pname];
-                    }
-                    break;
-                case "cookie":
-                    if (array_key_exists($pname, $this->cookieParameters)) {
-                        return $this->cookieParameters[$pname];
-                    }
-                    break;
-                case "path":
-                    if (array_key_exists($pname, $this->pathParameters)) {
-                        return $this->pathParameters[$pname];
-                    }
-                    break;
-                case "header":
-                    if (array_key_exists($pname, $this->headerParameters)) {
-                        return $this->headerParameters[$pname];
-                    }
-                    break;
-                default:
-                    break;
+                }
+                return $retval;
+            }
+            elseif (array_key_exists($pname, $this->$sname)) {
+                return $this->$sname[$pname];
             }
         }
-        return null;
+
+        return $retval;
     }
 
     public function hasParameter($pname, $source = "") {
         $sources = ["query", "body", "cookie", "path", "header"];
 
+        if ($source == "formData") {
+            $source = "body";
+        }
+
         if (!empty($source) && in_array($source, $sources)) {
             $sources = [$source];
         }
 
+        if (empty($pname)) {
+            return false;
+        }
+
         foreach ($sources as $s) {
-            switch ($s) {
-                case "query":
-                    if (array_key_exists($pname, $this->query)) {
-                        return true;
-                    }
-                    break;
-                case "body":
-                    if (array_key_exists($pname, $this->bodyParameters)) {
-                        return true;
-                    }
-                    break;
-                case "cookie":
-                    if (array_key_exists($pname, $this->cookieParameters)) {
-                        return true;
-                    }
-                    break;
-                case "path":
-                    if (array_key_exists($pname, $this->pathParameters)) {
-                        return true;
-                    }
-                    break;
-                case "header":
-                    if (array_key_exists($pname, $this->headerParameters)) {
-                        return true;
-                    }
-                    break;
-                default:
-                    break;
+            $sname = $s . 'Parameters';
+            if (array_key_exists($pname, $this->$sname)) {
+                return true;
             }
         }
         return false;
