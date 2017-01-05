@@ -4,9 +4,11 @@ namespace RESTling\Input;
 
 class JSON extends \RESTling\Input {
 
-    public function parse() {
-        $data = trim(file_get_contents("php://input"));
-
+    public function parse($data="") {
+        if (empty($data)) {
+            $data = trim(file_get_contents("php://input"));
+        }
+        
         if (empty($data)) {
             throw new \RESTling\Exception\EmptyInputData();
         }

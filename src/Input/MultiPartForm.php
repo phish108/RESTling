@@ -4,7 +4,7 @@ namespace RESTling\Input;
 
 class MultiPartForm extends \RESTling\Input {
 
-    public function parse() {
+    public function parse($data="") {
 
         if (empty($_POST)) {
             throw new \RESTling\Exception\EmptyInputData();

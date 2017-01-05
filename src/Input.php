@@ -60,6 +60,16 @@ class Input implements Interfaces\Input {
         }
     }
 
+    public function setQueryParameter($queryParameter) {
+        $this->queryParameters = $queryParameter;
+    }
+
+    public function setHeaderParameter($headers) {
+        foreach ($headers as $h => $c) {
+            $this->headerParameters[$h] = $c;
+        }
+    }
+
     public function setPathParameters($paramlist) {
         if (gettype($paramlist) == "array") {
             $this->pathParameters = $paramlist;
@@ -185,8 +195,18 @@ class Input implements Interfaces\Input {
         }
     }
 
-    public function parse() {
-        if ($_SERVER["METHOD"] == "PUT") {
+    public function parse($data="") {
+        if (!empty($data)) {
+            $p;
+            parse_str($data, $p);
+
+            if (empty($p)) {
+                throw new Exception\EmptyInputData();
+            }
+
+            $this->bodyParameters = $p;
+        }
+        elseif ($_SERVER["METHOD"] == "PUT") {
             $data = trim(file_get_contents("php://input"));
             if (empty($data)) {
                 throw new Exception\EmptyInputData();

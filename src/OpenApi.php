@@ -7,6 +7,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
     /** ***********************************************
     * Properties
     */
+    private $alternate = "";
 
     private $pathMap;             ///< helper for operation mapping
     private $activePath;          ///< helper for request handling
@@ -153,6 +154,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         if ($m === "post") {
             if (array_key_exists("method", $_GET)) {
                 $m = strtolower($_GET['method']);
+                $this->alternate = $m;
             }
         }
 
@@ -271,7 +273,79 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
             }
         }
 
-        parent::parseInput();
+        if (empty($this->alternate)) {
+            parent::parseInput();
+        }
+        else {
+            $this->alternateParseInput();
+        }
+    }
+
+    protected function alternateParseInput() {
+        $method = $this->alternate;
+
+        if ($method === "put" ||
+            $method === "post") {
+
+            $ctHead = explode(";", $_POST['Content-Type'], 2);
+            $contentType = array_shift($ctHead);
+
+            if (!empty($this->allowedContentTypes) && !in_array($contentType, $this->allowedContentTypes)) {
+                throw new Exception\InvalidContentType();
+            }
+
+            if (array_key_exists($contentType, $this->inputContentTypeMap)) {
+                $className = $this->inputContentTypeMap[$contentType];
+
+                if (!class_exists($className, true)) {
+                    throw new Exception\MissingContentParser();
+                }
+
+                $this->inputHandler = new $className();
+                $this->inputHandler->parse(urldecode($_POST["content"]));
+                $this->inputHandler->setContentType($contentType);
+                $this->inputHandler->path_info = $this->path_info;
+            }
+        }
+
+        if (!$this->inputHandler) {
+            $this->inputHandler = new BaseParser();
+        }
+
+        $allowedHeaders = [
+            "Authorization",
+            "Content-Type",
+            "X-Experience-API-Version",
+            "Content-Length",
+            "If-Match",
+            "If-Non-Match"
+        ];
+        $forbiddenParam = [
+            "method",
+            "content"
+        ];
+        // populate the query parameters
+        $qParams = [];
+        foreach ($_POST as $param => $value) {
+            if (in_array($param, $forbiddenParam) ||
+                in_array($param, $allowedHeaders)) {
+                next;
+            }
+            $qParam[$h] = $value;
+        }
+        if (!empty($qParams)) {
+            $this->inputHandler->setHeaderParameter($qParams);
+        }
+        // populate the header parameters
+        $headers = [];
+        foreach ($allowedHeaders as $h) {
+            if (array_key_exists($h, $_POST)) {
+                $headers[$h] = $_POST[$h];
+            }
+        }
+        if (!empty($headers)) {
+            $this->inputHandler->setHeaderParameter($headers);
+        }
     }
 
     protected function validateInput() {
