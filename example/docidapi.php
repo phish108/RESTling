@@ -1,89 +1,90 @@
 <?php
+require_once __DIR__."/../vendor/autoload.php";
 
 // Document ID API example.
+
 // This service listens to paths of different legths.
+// It uses the same model as the complex API example
 // If the path has 1 entry, the example method is called.
 // If the path has 2 or more entries, the sample method is called.
-
-// Moreover, the two path entries need to have values between 0 and 9.
-// If the values are out of range, the service throws an error.
-
-// Both methods accept GET and PUT methods. The put method is called on the
-// parent path. THerefore, put_sample is called on /2 paths and put_example
-// method is called on empty paths.
+//
+// The values of the path are stored in the "path parameters" of the input
+// object.
 //
 // All other method and path combinations will fail with a 405 response error
-set_include_path(".." . PATH_SEPARATOR . get_include_path());
 
-include('contrib/Restling.auto.php');
+class DocApiService extends RESTling\Service {
+    protected function findOperation() {
+        $op = strtolower($_SERVER["REQUEST_METHOD"]);
+        $this->operation = $op;
 
-class OpVal
-    extends \RESTling\Validator {
-
-    // validate accepts no additional pathinfo for put methods
-    // also the plain get request rejects additional pathinfo requests
-    protected function validate() {
-        switch ($this->operation) {
-            case "put":
-                if (!empty($this->path_info)) {
-                    return false;
-                }
-                break;
-            default:
-                if (empty($this->path_info) ||
-                    $this->path_info[0] <= 0 ||
-                     $this->path_info[0] >= 10) {
-                    return false;
-                }
-                break;
+        if (array_key_exists("PATH_INFO", $_SERVER)) {
+            $pi = explode("/",trim($_SERVER["PATH_INFO"], "/"));
+            if (count($pi) == 1) {
+                $ext = "example";
+            }
+            elseif (count($pi) == 2) {
+                $ext = "sample";
+            }
+            $this->operation = $op ."_".$ext;
         }
 
-        if ($this->operation == "get" && !empty($this->path_info)) {
-            return false;
+        parent::findOperation();
+    }
+    protected function parseInput() {
+        parent::parseInput();
+        $pi = explode("/",trim($_SERVER["PATH_INFO"], "/"));
+        $param = [];
+        if (count($pi) >= 1) {
+            $param["example"] = $pi[0];
         }
-        return true;
+        if (count($pi) == 2) {
+            $param["sample"] = $pi[1];
+        }
+        $this->inputHandler->setPathParameters($param);
     }
 }
 
-class DocIDAPIExample
-      extends \RESTling\Service
-{
-    protected function initializeRun() {
-        $this->addHeaderValidator(new OpVal());
-    }
 
+class ComplexAPIExample
+      extends \RESTling\Model
+{
     // this operation is called when no path parameters are available
     protected function get()
     {
         $this->data = 'get default ok';
     }
 
-    // GET /1
-    protected function get_example()
+    // GET /example
+    protected function get_example($input)
     {
-        $this->data = 'get example ok';
+        $param = $this->getParameter("example", "path");
+        $this->data = 'get example ok ' . $param;
     }
 
-    // POST /
-    protected function put_example()
+    // POST /example
+    protected function post_example($input)
     {
-        $this->data = 'post example ok';
+        $param = $this->getParameter("example", "path");
+        $this->data = 'post example ok ' . $param;
     }
 
-    // GET /1/2
-    protected function get_sample()
+    // GET /sample
+    protected function get_sample($input)
     {
-        $this->data = 'get sample ok';
+        $param = $this->getParameter("sample", "path");
+        $this->data = 'get sample ok ' . $param;
     }
 
-    // PUT /1/
-    protected function put_sample()
+    // PUT /sample
+    protected function put_sample($input)
     {
-        $this->data = 'put sample ok';
+        $param = $this->getParameter("sample", "path");
+        $this->data = 'put sample ok ' . $param . " " . json_encode($input->getBody());
     }
 }
 
-$service = new DocIDAPIExample();
+$service = new DocApiService();
 
-$service->run();
+$service->run(new ComplexAPIExample());
 ?>

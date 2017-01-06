@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__."/../vendor/autoload.php";
 
 // slightly complex API example.
 // This service listens to 2 REST paths: 'example' and 'sample'. other paths are not permitted.
@@ -7,16 +8,15 @@
 // only GET and POST methods.
 //
 // All other method and path combinations will fail with a 405 response error
-set_include_path(".." . PATH_SEPARATOR .
-                get_include_path());
-
-include('contrib/Restling.auto.php');
 
 class StreamingAPIExample
-      extends \RESTling\Service
+      extends \RESTling\Model
 {
     // This property is used for passing on the stream.
     private $mystream;
+    // this property only needed because we have different response types for the
+    // service operations.
+    private $response_type = "text/plain";
 
     // this operation is called when no path parameters are available
     protected function get()
@@ -25,19 +25,18 @@ class StreamingAPIExample
     }
 
     // GET /example < sends a plain text data stream
-    protected function get_example()
+    protected function get_example($input)
     {
-        $this->streamData();
         // prepare the stream
-        $this->response_type = "text";
+        $input->setResponseType($this->response_type);
         $this->mystream = array("Example ", "Stream ", "Is ", "OK");
     }
 
     // GET /sample < sends a JSON data stream
-    protected function get_sample()
+    protected function get_sample($input)
     {
-        $this->streamData();
-        $this->response_type = "json";
+        $this->response_type = "application/json";
+        $input->setResponseType($this->response_type);
         $this->mystream = array(array("chunk" =>"Sample"),
                                 array("chunk" => "JSON"),
                                 array("chunk" => "is"),
@@ -45,46 +44,46 @@ class StreamingAPIExample
     }
 
     /**
-     * if the stream is generated from a database, then start and end stream
-     * help to complete the data structure.
-     *
-     * Start and end stream functions can be tailored to specific response
-     * types.
-     */
-    protected function init_stream_json()
-    {
-        echo ("[");
-    }
-
-    protected function end_stream_json()
-    {
-        echo ("]");
+ 	 * The streaming API needs to inform the service class that there is data to
+     * handle.
+ 	 *
+ 	 * @return boolean
+	 */
+	public function hasData() {
+        if (!empty($this->mystream)) {
+            return true;
+        }
+        return parent::hasData();
     }
 
     /**
-     * The streaming magic happens in the stream function. Note, that this function
-     * does not use events.
+     * The streaming magic happens in the handleData function.
+     * for large DB requests, you may want to defer the request until this
+     * function.
      */
-    protected function stream()
+    protected function handleData($output)
     {
+        $output = false;
+        $json   = false; // only needed because we run multiple output types
+        if ($this->response_type == "application/json") {
+            $json = true;
+            $output->data("]");
+        }
+
         foreach ($this->mystream as $chunk)
         {
-            $this->respond($chunk);
+            if ($json && $output) {
+                $output->data(","); // don't forget the separators
+            }
+            $output->data($chunk);
+            $output = true;
+        }
+        if ($json) {
+            $output->data("]");
         }
     }
-
-    /**
-     * many streams require cleanup of some kind. The cleanup is called after
-     * all data is sent. This method is called, both in document as well as
-     * in streaming mode.
-     *
-     * This is useful if multiple response types can get streamed.
-     */
-    protected function cleanup()
-    {}
 }
 
-$service = new StreamingAPIExample();
-
-$service->run();
+$service = new RESTling\Service();
+$service->run(new StreamingAPIExample());
 ?>

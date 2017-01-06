@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__."/../vendor/autoload.php";
 
 // slightly complex API example.
 // This service listens to 2 REST paths: 'example' and 'sample'. other paths are not permitted.
@@ -7,13 +8,9 @@
 // only GET and POST methods.
 //
 // All other method and path combinations will fail with a 405 response error
-set_include_path(".." . PATH_SEPARATOR .
-                get_include_path());
-
-include('contrib/Restling.auto.php');
 
 class ComplexAPIExample
-      extends \RESTling\Service
+      extends \RESTling\Model
 {
     // this operation is called when no path parameters are available
     protected function get()
@@ -40,16 +37,14 @@ class ComplexAPIExample
     }
 
     // PUT /sample
-    protected function put_sample()
+    protected function put_sample($input)
     {
-        $this->data = 'put sample ok ' . $this->input;
+        $this->data = 'put sample ok ' . json_encode($input->getBody());
     }
 }
 
-$service = new ComplexAPIExample();
+$service = new RESTling\Service();
 
-// $service->addValidator(new OauthSession($dbh)); // you may add some header validation at this point
-// $service->addCORShost('*', 'Authorization');    // allow cross origin headers (carfully, this won't work with some clients)
+$service->run(new ComplexAPIExample());
 
-$service->run();
 ?>
