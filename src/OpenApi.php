@@ -279,6 +279,7 @@ class OpenAPI extends Service implements Interfaces\OpenApi {
         else {
             $this->alternateParseInput();
         }
+        $this->inputHandler->setPathParameter($this->pathParameters);
     }
 
     protected function alternateParseInput() {
