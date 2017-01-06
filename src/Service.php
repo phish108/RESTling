@@ -379,14 +379,14 @@ class Service implements Interfaces\Service
     protected function prepareOutputProcessor() {
         // determine the output handler
         // get accept content types from the client
-        $h = getallheaders();
         $act = [];
+        $input = $this->inputHandler;
 
-        $iCT = $this->inputHandler->getResponseContentType();
+        $iCT = $input->getResponseContentType();
         $this->preferredOutputType = $iCT;
 
-        if (empty($iCT) && array_key_exists("Accept", $h)) {
-            $acp = explode(",", $h["Accept"]);
+        if (empty($iCT) && $input->hasParameter("Accept", "header")) {
+            $acp = explode(",", $input->getParameter("Accept", "header"));
 
             foreach ($acp as $ct) {
                 $tmpArray = explode(";", $ct, 2);
