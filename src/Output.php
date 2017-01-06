@@ -123,6 +123,10 @@ class Output implements Interfaces\Output {
 	public function bypass() {
         $this->dataSent = true;
     }
+
+    public function hasSentData() {
+        return $this->dataSent;
+    }
 }
 
 ?>

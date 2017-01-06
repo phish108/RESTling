@@ -243,7 +243,29 @@ class Service implements Interfaces\Service
      *
      */
     protected function findOperation() {
-        $this->operation = strtolower($_SERVER["REQUEST_METHOD"]);
+        if (!$this->operation) {
+            $op = strtolower($_SERVER["REQUEST_METHOD"]);
+
+            if (array_key_exists("PATH_INFO", $_SERVER)) {
+                $pi = explode("/",$_SERVER["PATH_INFO"]);
+                array_shift($pi); // remove the first empty string;
+                foreach ($pi as $pElement) {
+                    $pElement = trim(urldecode($pElement));
+                    if (empty($pElement)) {
+                        next;
+                    }
+                    $pElement = strtolower($pElement);
+                    if (method_exists($this->model, "$op_$pElement")) {
+                        $op = "$op$pElement";
+                    }
+                }
+            }
+            $this->operation = $op;
+        }
+
+        if (!method_exists($this->model, $this->operation)) {
+            throw new Exception\NotImplemented();
+        }
     }
 
     /**
@@ -359,7 +381,11 @@ class Service implements Interfaces\Service
         // get accept content types from the client
         $h = getallheaders();
         $act = [];
-        if (array_key_exists("Accept", $h)) {
+
+        $iCT = $this->inputHandler->getResponseContentType();
+        $this->preferredOutputType = $iCT;
+
+        if (empty($iCT) && array_key_exists("Accept", $h)) {
             $acp = explode(",", $h["Accept"]);
 
             foreach ($acp as $ct) {
@@ -370,54 +396,45 @@ class Service implements Interfaces\Service
                     $act[] = $ct;
                 }
             }
+            // TODO sort response types by client preference
         }
-
-        // TODO sort response types by client preference
 
         // check the available output formats
         foreach ($act as $contentType) {
             if (array_key_exists($contentType, $this->outputContentTypeMap)) {
-                $className = $this->outputContentTypeMap[$contentType];
-
-                if (!class_exists($className, true)) {
-                    throw new Exception\MissingOutputProcessor();
-                }
-
-                $this->outputHandler = new $className();
+                $this->preferredOutputType = $contentType;
                 break;
             }
         }
 
-        if (!$this->outputHandler) {
-            // if we found no handler we use the default handler
-            $outputType;
+        // if we found no handler we use the default handler
+        $outputType;
 
-            if (!empty($this->preferredOutputType))
-            {
-                $outputType = $this->preferredOutputType;
+        if (!empty($this->preferredOutputType))
+        {
+            $outputType = $this->preferredOutputType;
+        }
+
+        if (empty($outputType) &&
+            !empty($this->availableOutputTypes))
+        {
+            $outputType = $this->availableOutputTypes[0];
+        }
+
+        if (empty($outputType) ||
+            !array_key_exists($outputType, $this->outputContentTypeMap))
+        {
+            $outputType = "*/*";
+        }
+
+        if (array_key_exists($outputType, $this->outputContentTypeMap)) {
+            $className = $this->outputContentTypeMap[$contentType];
+
+            if (!class_exists($className, true)) {
+                throw new Exception\MissingOutputProcessor();
             }
 
-            if (empty($outputType) &&
-                !empty($this->availableOutputTypes))
-            {
-                $outputType = $this->availableOutputTypes[0];
-            }
-
-            if (empty($outputType) ||
-                !array_key_exists($outputType, $this->outputContentTypeMap))
-            {
-                $outputType = "*/*";
-            }
-
-            if (array_key_exists($outputType, $this->outputContentTypeMap)) {
-                $className = $this->outputContentTypeMap[$contentType];
-
-                if (!class_exists($className, true)) {
-                    throw new Exception\MissingOutputProcessor();
-                }
-
-                $this->outputHandler = new $className();
-            }
+            $this->outputHandler = new $className();
         }
     }
 
