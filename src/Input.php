@@ -20,6 +20,8 @@ class Input implements Interfaces\Input {
 
     protected $bodyParameters   = [];
 
+    protected $outputContentType = "";
+
     public function __construct($multi=false) {
         $this->isMulti = $multi;
 
@@ -70,10 +72,24 @@ class Input implements Interfaces\Input {
         }
     }
 
-    public function setPathParameters($paramlist) {
+    public function setPathParameter($paramlist) {
         if (gettype($paramlist) == "array") {
             $this->pathParameters = $paramlist;
         }
+    }
+
+    public function setResponseType($contentType) {
+        $this->setOutputContentType($contentType);
+    }
+
+    public function setResponseContentType($contentType) {
+        if (!empty($contentType)) {
+            $this->outputContentType = $contentType;
+        }
+    }
+
+    public function getResponseContentType() {
+        return $this->outputContentType = $contentType;
     }
 
     // returns the raw query string

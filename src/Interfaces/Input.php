@@ -11,7 +11,10 @@ interface Input {
  	 * @param array $parameterList
  	 * @return void
 	 */
-	public function setPathParameters($parameterList);
+	public function setPathParameter($parameterList);
+
+    public function setQueryParameter($queryParameterList);
+    public function setHeaderParameter($headerList);
 
     /**
  	 * returns the raw query string
@@ -53,7 +56,7 @@ interface Input {
      *
      * The same sources apply as for getParameter().
  	 *
- 	 * @param string $parameterName
+ 	 * @param mixed $parameterName - string or array of strings
      * @param string $parameterSource - default ""
  	 * @return void
 	 */
@@ -82,6 +85,34 @@ interface Input {
 
     public function setContentType($contentType);
     public function getContentType();
+
+
+    /**
+ 	 * returns the requested content type for the response, if any.
+     *
+     * This method is used ONLY by the service class.
+ 	 *
+ 	 * @param type
+ 	 * @return void
+	 */
+	public function getResponseContentType();
+
+    /**
+ 	 * requests a content type for the response. This will overwrite any
+     * client requests.
+ 	 *
+ 	 * @param string $contentType - valid Mime Type string.
+ 	 * @return void
+	 */
+	public function setResponseContentType($contentType);
+
+    /**
+ 	 * Alias for setResponseContentType($contentType).
+ 	 *
+ 	 * @param string $contentType - valid Mime Type string.
+ 	 * @return void
+	 */
+	public function setResponseType($contentType);
 
     public function addActiveUser($userid);
     public function hasActiveUser($userid);
