@@ -97,6 +97,10 @@ class Input implements Interfaces\Input {
         return $this->queryString;
     }
 
+    final public function get($pname, $source = "") {
+            return $this->getParameter($pname, $source);
+    }
+
     public function getParameter($pname, $source = "") {
         $sources = ["query", "body", "cookie", "path", "header"];
         if ($this->isMulti) {
@@ -140,6 +144,10 @@ class Input implements Interfaces\Input {
         }
 
         return $retval;
+    }
+
+    final public function has($pname, $source = "") {
+            return $this->hasParameter($pname, $source);
     }
 
     public function hasParameter($pname, $source = "") {

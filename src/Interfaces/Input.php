@@ -48,6 +48,7 @@ interface Input {
  	 * @return void
 	 */
 	public function getParameter($pname, $source = "");
+    public function get($pname, $source = "");
 
     /**
  	 * Checks if a parameter exists in the curent input.
@@ -61,6 +62,7 @@ interface Input {
  	 * @return void
 	 */
 	public function hasParameter($pname, $source = "");
+    public function has($pname, $source = "");
 
     /**
  	 * Checks if a parameter at the given source complies with the given schema.
