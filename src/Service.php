@@ -377,6 +377,13 @@ class Service implements Interfaces\Service
      *
      */
     protected function prepareOutputProcessor() {
+        // if the model requested a delayed redirect
+        if ($this->model &&
+            !empty($this->model->getLocation())) {
+
+            throw new Exception\Redirect();
+        }
+
         // determine the output handler
         // get accept content types from the client
         $act = [];
@@ -534,8 +541,10 @@ class Service implements Interfaces\Service
                 case "Moved Permanently":
                     $this->responseCode = 301;
                     break;
+                case "Redirect":
                 case "Moved Temporarly":
                     $this->responseCode = 302;
+                    header("Location: " . $this->model->getLocation());
                     break;
                 case "Not Modified":
                     $this->responseCode = 304;

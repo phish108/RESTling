@@ -6,6 +6,7 @@ abstract class Model implements Interfaces\Model {
     private $errors = [];
 
     private $worker = [];
+    private $location = null;
 
     public function __construct(){
     }
@@ -39,6 +40,19 @@ abstract class Model implements Interfaces\Model {
     public function hasData()
     {
         return !empty($this->data);
+    }
+
+    public function getLocation() {
+        return $this->location;
+    }
+
+    protected function redirect($location, $immediate= true) {
+        if (!empty($location)) {
+            $this->location = $location;
+            if ($immediate) {
+                throw new Exception\Redirect();
+            }
+        }
     }
 
     /**

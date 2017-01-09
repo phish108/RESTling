@@ -8,6 +8,7 @@ interface Model {
     public function getErrors();
 
     public function hasData();
+    public function getLocation();
 
     /**
  	 * Adds a new Worker object for post processing.
