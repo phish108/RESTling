@@ -10,6 +10,17 @@ class OpenApi {
     public function __construct() {
     }
 
+    public function export($type="json") {
+        $retval = $this->config;
+        switch ($type) {
+            case 'json':
+                $retval = json_encode($retval);
+            default:
+                break;
+        }
+        return $retval;
+    }
+
     public function getApiVersion() {
         return $this->version;
     }
