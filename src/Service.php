@@ -83,6 +83,10 @@ class Service implements Interfaces\Service
         return $this->model;
     }
 
+    final protected function getSecurityModel() {
+        return $this->securityModel;
+    }
+
     final public function setSecurityModel($model, $secure = false) {
         if ($secure && $this->securityModel) {
             throw new Exception\ModelAlreadySet();
@@ -90,7 +94,7 @@ class Service implements Interfaces\Service
         if (!($model && $model instanceof \RESTling\Interfaces\Security\Model)) {
             throw new Exception\SecurityModelInterfaceMismatch();
         }
-        $this->model = $model;
+        $this->securityModel = $model;
     }
 
     /**
