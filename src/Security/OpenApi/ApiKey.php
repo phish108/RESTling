@@ -10,6 +10,12 @@ class ApiKey extends \RESTling\Security\OpenApi {
 
         $in = $this->get("in");
         $name = $this->get("name");
+
+        // we need a way to generalise across systems
+        if (method_exists($model, 'translateTokenName')) {
+            $name = $model->translateTokenName($name, $in);
+        }
+        
         $this->token = $input->get($name, $in);
 
         if (!empty($this->token)) {
