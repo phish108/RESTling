@@ -241,6 +241,10 @@ class Service implements Interfaces\Service
         if ($this->noModel()) {
             throw new Exception\MissingModel();
         }
+        // models may implement this as a boolean function
+        if (!$this->model->isActive()) {
+            throw new Exception\ServiceUnavailable();
+        }
     }
 
     /**

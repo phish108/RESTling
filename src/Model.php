@@ -46,6 +46,10 @@ abstract class Model implements Interfaces\Model {
         return $this->location;
     }
 
+    public function isActive() {
+        return true;
+    }
+
     protected function redirect($location, $immediate= true) {
         if (!empty($location)) {
             $this->location = $location;

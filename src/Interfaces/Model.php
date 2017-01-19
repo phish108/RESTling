@@ -42,6 +42,14 @@ interface Model {
  	 * @param \RESTling\OutputInterface $outputModel
 	 */
     public function handleData($output);
+
+    /**
+ 	 * throws an exception if the model is not ready to handle any operation.
+     *
+     * Alternatively it may return boolean values, where true indicates that
+     * the model is active.
+	 */
+	public function isActive();
 }
 
 ?>
