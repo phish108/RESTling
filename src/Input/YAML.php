@@ -8,7 +8,7 @@ class YAML extends \RESTling\Input {
         if (empty($data)) {
             $data = trim(file_get_contents("php://input"));
         }
-        
+
         if (empty($data)) {
             throw new \RESTling\Exception\EmptyInputData();
         }

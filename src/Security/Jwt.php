@@ -4,7 +4,7 @@ namespace RESTling\Security;
 /**
  * For full compliance security models MUST support the following functions:
  * - getPrivateKey() - load the server's own private key
- * - getSharedKey($keyId) - load a shared key for a given key id (kid or jku values)
+ * - getSharedKey($keyId, $jku) - load a shared key for a given key id (kid or jku values)
  * - verifyIssuer($iss, $keyId) - throws an error if the issuer does not match the target for the keyId
  */
 class Jwt extends \RESTling\Security {
@@ -87,16 +87,15 @@ class Jwt extends \RESTling\Security {
                     throw new \RESTling\Exception\Security\SharedKeyDecryptionUnsupported();
                 }
 
-                $keyId = $kid;
-                if (empty($kid)) {
-                    $keyId = $jku;
-                }
-                else {
+                if (!empty($kid)) {
                     $keyAttr['kid'] = $kid;
+                }
+                if (!empty($jku)) {
+                    $keyAttr['jku'] = $jku;
                 }
 
                 // 3d ask JOSE Key Context (for $kid or $jku) from model
-                if (!($keyString = $model->getSharedKey($keyId))) {
+                if (!($keyString = $model->getSharedKey($kid, $jku))) {
                     throw new \RESTling\Exception\Security\SharedKeyMissing();
                 }
             }
@@ -171,7 +170,7 @@ class Jwt extends \RESTling\Security {
                 throw new \RESTling\Exception\Security\SharedKeyValidationUnsupported();
             }
 
-            if (!($keyString = $model->getSharedKey($keyId))) {
+            if (!($keyString = $model->getSharedKey($kid, $jku))) {
                 throw new \RESTling\Exception\Security\SharedKeyMissing();
             }
 
