@@ -130,16 +130,17 @@ class Input implements Interfaces\Input {
 
         foreach ($sources as $s) {
             $sname = $s . 'Parameters';
+            $arr = $this->$sname;
             if (is_array($pname)) {
                 foreach ($pname as $name) {
-                    if (!empty($name) && array_key_exists($name, $this->$sname)) {
-                        $retval[$name] = $this->$sname[$name];
+                    if (!empty($name) && array_key_exists($name, $arr)) {
+                        $retval[$name] = $arr[$name];
                     }
                 }
                 return $retval;
             }
-            elseif (array_key_exists($pname, $this->$sname)) {
-                return $this->$sname[$pname];
+            elseif (array_key_exists($pname, $arr)) {
+                return $arr[$pname];
             }
         }
 
