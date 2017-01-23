@@ -443,7 +443,7 @@ class Service implements Interfaces\Service
         }
 
         if (array_key_exists($outputType, $this->outputContentTypeMap)) {
-            $className = $this->outputContentTypeMap[$contentType];
+            $className = $this->outputContentTypeMap[$outputType];
 
             if (!class_exists($className, true)) {
                 throw new Exception\MissingOutputProcessor();

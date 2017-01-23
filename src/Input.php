@@ -89,7 +89,7 @@ class Input implements Interfaces\Input {
     }
 
     public function getResponseContentType() {
-        return $this->outputContentType = $contentType;
+        return $this->outputContentType;
     }
 
     // returns the raw query string
