@@ -263,8 +263,8 @@ class Service implements Interfaces\Service
                         next;
                     }
                     $pElement = strtolower($pElement);
-                    if (method_exists($this->model, "$op_$pElement")) {
-                        $op = "$op$pElement";
+                    if (method_exists($this->model, $op . '_' . $pElement)) {
+                        $op = $op . '_' . $pElement;
                     }
                 }
             }
