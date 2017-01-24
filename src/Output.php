@@ -15,6 +15,10 @@ class Output implements Interfaces\Output {
     public function __construct() {
     }
 
+    public function content_type() {
+        return $this->contentType;
+    }
+
     public function setStatus($code) {
         $this->statusCode = $code;
     }
@@ -102,16 +106,48 @@ class Output implements Interfaces\Output {
         $this->data(join(', ', $this->traceback));
     }
 
+
+    /**
+ 	 * marks the beginning of a data stream
+ 	 *
+ 	 * @param $data - extra data to prepend the stream
+	 */
+	public function start($data="") {
+        if (!empty($data)) {
+            ob_end_flush();
+            echo $data;
+            ob_start();
+        }
+        $this->dataSent = false;
+    }
+
+    /**
+ 	 * marks the end of a data stream
+ 	 *
+ 	 * @param $data - extra data to add data the stream
+	 */
+	public function end($data="") {
+        if (!empty($data)) {
+            ob_end_flush();
+            echo $data;
+            ob_start();
+        }
+    }
+
     /**
      * the data() method sends a data chunk to the client
      */
-    public function data($data) {
-        if (gettype($data) == "string") {
-            ob_end_flush();
-            // immediately send the data to the client
-            echo($data);
-            ob_start();
+    public function data($data, $seperator="") {
+        ob_end_flush();
+        // immediately send the data to the client
+        if (!empty($seperator) && $this->dataSent) {
+            echo($seperator);
         }
+        if (!empty($data)) {
+            echo($data);
+        }
+
+        ob_start();
         $this->dataSent = true;
     }
 

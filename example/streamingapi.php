@@ -19,28 +19,31 @@ class StreamingAPIExample
     private $response_type = "text/plain";
 
     // this operation is called when no path parameters are available
-    protected function get()
+    public function get()
     {
         $this->data = 'get default ok';
     }
 
     // GET /example < sends a plain text data stream
-    protected function get_example($input)
+    public function get_example($input)
     {
         // prepare the stream
+        $input->setResponseType("text/plain");
         $input->setResponseType($this->response_type);
-        $this->mystream = array("Example ", "Stream ", "Is ", "OK");
+
+        // IRL we would PREPARE a complex operation that yields data chunks
+        // and EXECUTE the operation in handleData()
+        $this->mystream = array("Example", "Stream", "Is", "OK");
     }
 
     // GET /sample < sends a JSON data stream
-    protected function get_sample($input)
+    public function get_sample($input)
     {
-        $this->response_type = "application/json";
-        $input->setResponseType($this->response_type);
-        $this->mystream = array(array("chunk" =>"Sample"),
-                                array("chunk" => "JSON"),
-                                array("chunk" => "is"),
-                                array("chunk" => "OK"));
+        $input->setResponseType("application/json");
+        $this->mystream = [["chunk" =>"Sample"],
+                           ["chunk" => "JSON"],
+                           ["chunk" => "is"],
+                           ["chunk" => "OK"]];
     }
 
     /**
@@ -61,25 +64,22 @@ class StreamingAPIExample
      * for large DB requests, you may want to defer the request until this
      * function.
      */
-    protected function handleData($output)
+    public function handleData($output, $seperator="")
     {
-        $output = false;
-        $json   = false; // only needed because we run multiple output types
-        if ($this->response_type == "application/json") {
-            $json = true;
-            $output->data("]");
-        }
+        parent::handleData($output);
 
-        foreach ($this->mystream as $chunk)
-        {
-            if ($json && $output) {
-                $output->data(","); // don't forget the separators
+        if (!empty($this->mystream)) {
+        // start streaming
+            $output->start(); // creates an array wrapper for json objects
+
+            foreach ($this->mystream as $chunk)
+            {
+                $output->data($chunk, ", "); // we need to tell the text output to separate the data chunks.
+                // by default text data chunks have no separator!
+                // by default json data chunks are seperated by comman
             }
-            $output->data($chunk);
-            $output = true;
-        }
-        if ($json) {
-            $output->data("]");
+
+            $output->end(); // closes the array wrapper again
         }
     }
 }

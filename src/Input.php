@@ -79,7 +79,7 @@ class Input implements Interfaces\Input {
     }
 
     public function setResponseType($contentType) {
-        $this->setOutputContentType($contentType);
+        $this->setResponseContentType($contentType);
     }
 
     public function setResponseContentType($contentType) {
