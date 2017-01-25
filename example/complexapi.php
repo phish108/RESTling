@@ -10,41 +10,39 @@ require_once __DIR__."/../vendor/autoload.php";
 // All other method and path combinations will fail with a 405 response error
 
 class ComplexAPIExample
-      extends \RESTling\Model
 {
     // this operation is called when no path parameters are available
-    protected function get()
+    public function get($in, $out)
     {
-        $this->data = 'get default ok';
+        $out->data = 'get default ok';
     }
 
     // GET /example
-    protected function get_example()
+    public function get_example($in, $out)
     {
-        $this->data = 'get example ok';
+        $out->data = 'get example ok';
     }
 
     // POST /example
-    protected function post_example()
+    public function post_example($in, $out)
     {
-        $this->data = 'post example ok';
+        $out->data = 'post example ok';
     }
 
     // GET /sample
-    protected function get_sample()
+    public function get_sample($in, $out)
     {
-        $this->data = 'get sample ok';
+        $out->data = 'get sample ok';
     }
 
     // PUT /sample
-    protected function put_sample($input)
+    public function put_sample($in, $out)
     {
-        $this->data = 'put sample ok ' . json_encode($input->getBody());
+        $out->data = 'put sample ok ' . json_encode($in->getBody());
     }
 }
 
 $service = new RESTling\Service();
-
 $service->run(new ComplexAPIExample());
 
 ?>

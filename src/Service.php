@@ -11,6 +11,7 @@ class Service implements Interfaces\Service
     private $securityModel;
     protected $inputHandler;
     private $outputHandler;
+    private $outputHelper;
     private $securityHandler = [];
 
     private $responseCode = 200;
@@ -54,7 +55,9 @@ class Service implements Interfaces\Service
      *
      * instantiates the service class. It performs no other operation.
      */
-    public function __construct() {}
+    public function __construct() {
+        $this->outputHelper = new OutputHelper();
+    }
 
     /**
      * @final @public @method setModel($model[, $secure])
@@ -73,7 +76,7 @@ class Service implements Interfaces\Service
         if ($secure && $this->model) {
             throw new Exception\ModelAlreadySet();
         }
-        if (!($m && $m instanceof \RESTling\Interfaces\Model)) {
+        if (!is_object($m)) {
             throw new Exception\ModelInterfaceMismatch();
         }
         $this->model = $m;
@@ -241,8 +244,9 @@ class Service implements Interfaces\Service
         if ($this->noModel()) {
             throw new Exception\MissingModel();
         }
+
         // models may implement this as a boolean function
-        if (!$this->model->isActive()) {
+        if (method_exists($this, "isActive") && !$this->model->isActive()) {
             throw new Exception\ServiceUnavailable();
         }
     }
@@ -378,7 +382,7 @@ class Service implements Interfaces\Service
         }
 
         call_user_func(array($this->model,
-                             $this->operation), $this->inputHandler);
+                             $this->operation), $this->inputHandler, $this->outputHelper);
     }
 
     /**
@@ -491,7 +495,7 @@ class Service implements Interfaces\Service
         }
 
         // generate the output
-        $this->outputHandler->process($this->model);
+        $this->outputHandler->process($this->outputHelper);
     }
 
     /**

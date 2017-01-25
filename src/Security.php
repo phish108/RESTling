@@ -28,7 +28,7 @@ abstract class Security implements Interfaces\Security {
     public function verify($model, $input) {
         $this->passed = false;
 
-        if (!empty($scopes)) {
+        if (!empty($this->scopes)) {
             if (!$model || !method_exists($model, "verifyScope")) {
                 throw new Exception\ScopeVerificationUnsupported();
             }

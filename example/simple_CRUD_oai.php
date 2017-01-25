@@ -13,45 +13,45 @@ require_once __DIR__."/../vendor/autoload.php";
  * The OpenAPI Service loader will select the RestlingTest model because of
  * Service Title to Classname mapping.
  */
-class RestlingTest extends \RESTling\Model
+class RestlingTest
 {
-    public function gimmeV()
+    public function gimmeV($in, $out)
     {
-        $this->data = 'get ok';
+        $out->data = 'get ok';
     }
 
-    public function postbox()
+    public function postbox($in, $out)
     {
-        $this->data = 'post ok';
+        $out->data = 'post ok';
     }
 
-    public function putMeDown()
+    public function putMeDown($in, $out)
     {
-        $this->data = 'put ok';
+        $out->data = 'put ok';
         throw new \RESTling\Exception\Created(); // return created "error"
     }
 
-    public function erase()
+    public function erase($in, $out)
     {
         error_log("delete");
         throw new \RESTling\Exception\Gone();  // return Gone "error"
     }
 
-    public function gimmeVmore($input)
+    public function gimmeVmore($input, $out)
     {
-        $this->data = 'get ok + ';
+        $out->data = 'get ok + ';
         if ($input &&
             $input->hasParameter("foo")) {
-            $this->data .= $input->getParameter("foo");
+            $out->data .= $input->getParameter("foo");
         }
     }
 
-    public function putMeFurtherDown($input)
+    public function putMeFurtherDown($input, $out)
     {
-        $this->data = 'put ok + ';
+        $out->data = 'put ok + ';
         if ($input &&
             $input->hasParameter("foo")) {
-            $this->data .= $input->getParameter("foo");
+            $out->data .= $input->getParameter("foo");
         }
     }
 }

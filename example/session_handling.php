@@ -10,7 +10,7 @@ require_once __DIR__ ."/restlingtest.php";
 // For very simple services and security requirements  the security accessors
 // could be directly implemented into the service class. This makes sense, for
 // example, if only API keys in Bearer Tokens are validated.
-class RestlingTestSecurity implements \RESTling\Interfaces\Security\Model
+class RestlingTestSecurity
 {
     // ***********************************************
     // Security accessors
@@ -34,7 +34,7 @@ class RestlingTestSecurity implements \RESTling\Interfaces\Security\Model
             throw new \RESTling\Exception\Forbidden();
         }
     }
-    
+
     // for basic authorization
     public function validateUserPassword($user, $passwd) {
         if ($user != "foo") {

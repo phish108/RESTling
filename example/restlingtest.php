@@ -5,35 +5,35 @@
 // hasData() and getData() functions.
 // If you want to provide complex error information, you want to
 // implement
-class RestlingTest extends \RESTling\Model
+class RestlingTest
 {
-    public function get($input)
+    public function get($input, $output)
     {
-        $this->data = 'get ok ';
+        $output->data = 'get ok ';
 
         if ($input->hasParameter("foo", "query")) {
             $d = $input->getParameter("foo", "query");
             if (is_array($d)) {
-                $this->data .= "multiple " . join(", ", $d);
+                $output->data .= "multiple " . join(", ", $d);
             }
             else {
-                $this->data .= "singleton $d";
+                $output->data .= "singleton $d";
             }
         }
     }
 
-    public function post()
+    public function post($input, $output)
     {
-        $this->data = 'post ok';
+        $output->data = 'post ok';
     }
 
-    public function put()
+    public function put($input, $output)
     {
-        $this->data = 'put ok';
+        $output->data = 'put ok';
         throw new \RESTling\Exception\Created(); // return created error
     }
 
-    public function delete()
+    public function delete($input, $output)
     {
         error_log("delete");
         throw new \RESTling\Exception\Gone(); // return Gone error
