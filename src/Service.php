@@ -108,7 +108,7 @@ class Service implements Interfaces\Service
      * model is set.
      */
     final protected function hasModel() {
-        return ($this->model && $this->model instanceof \RESTling\Interfaces\Model);
+        return ($this->model);
     }
 
     /**
@@ -197,11 +197,11 @@ class Service implements Interfaces\Service
      */
     final public function run($model = null) {
 
-        if ($model && !($model instanceof \RESTling\Interfaces\Model)) {
-            $this->error = "No RESTling\ModelInterface Provided";
-        }
-        elseif ($model) {
+        if ($model) {
             $this->setModel($model);
+        }
+        else {
+            $this->error = "No RESTling\ModelInterface Provided";
         }
 
         $fLoop = [
@@ -391,7 +391,7 @@ class Service implements Interfaces\Service
     protected function prepareOutputProcessor() {
         // if the model requested a delayed redirect
         if ($this->model &&
-            !empty($this->model->getLocation())) {
+            !empty($this->outputHelper->getLocation())) {
 
             throw new Exception\Redirect();
         }
@@ -592,7 +592,7 @@ class Service implements Interfaces\Service
 	 */
 	protected function postProcess() {
         if ($this->hasModel()) {
-            $this->model->runWorkers();
+            $this->outputHelper->runWorkers();
         }
     }
 }
