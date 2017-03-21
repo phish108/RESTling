@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception;
 
-class ScopeVerificationUnsupported extends \RESTling\Exception {
+class ScopeVerificationUnsupported extends BadRequest {
 }
 ?>

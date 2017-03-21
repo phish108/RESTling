@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class VersionUnsupported extends \RESTling\Exception {
+class VersionUnsupported extends \RESTling\Exception\BadRequest {
 }
 ?>

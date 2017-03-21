@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security\OpenAPI;
 
-class MissingTokenUrl extends \RESTling\Exception {
+class MissingTokenUrl extends \RESTling\Exception\Forbidden {
 }
 ?>

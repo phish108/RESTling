@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security;
 
-class TokenRejected extends \RESTling\Exception {
+class TokenRejected extends \RESTling\Exception\Forbidden {
 }
 ?>

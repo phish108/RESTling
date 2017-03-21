@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security;
 
-class MissingAudience extends \RESTling\Exception {
+class MissingAudience extends \RESTling\Exception\Forbidden {
 }
 ?>

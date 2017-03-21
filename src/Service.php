@@ -201,7 +201,7 @@ class Service implements Interfaces\Service
             $this->setModel($model);
         }
         else {
-            $this->error = "No RESTling\ModelInterface Provided";
+            $this->error = new \RESTling\Exception\BadRequest("No RESTling\ModelInterface Provided");
         }
 
         $fLoop = [
@@ -221,14 +221,13 @@ class Service implements Interfaces\Service
                         call_user_func(array($this, $func));
                     }
                     catch (Exception $err) {
-                        $this->error = $err->getMessage();
+                        $this->error = $err;
                         break;
                     }
                 }
             }
         }
 
-        $this->handleError();
         $this->processResponse();
 
         ob_flush();// definitely terminate pass all response content
@@ -246,6 +245,7 @@ class Service implements Interfaces\Service
         }
 
         // models may implement this as a boolean function
+        // or throw an error
         if (method_exists($this, "isActive") && !$this->model->isActive()) {
             throw new Exception\ServiceUnavailable();
         }
@@ -464,12 +464,13 @@ class Service implements Interfaces\Service
         if(!$this->outputHandler) {
             $this->outputHandler = new BaseResponder();
         }
-        // prepare out put after error handling
+
+        if (!empty($this->error)) {
+            $this->handleError();
+        }
+
         if ($this->responseCode) {
             $this->outputHandler->setStatus($this->responseCode);
-        }
-        if (!empty($this->error)) {
-            $this->outputHandler->addTraceback($this->error);
         }
 
         // CORS handling
@@ -510,79 +511,24 @@ class Service implements Interfaces\Service
      */
     protected function handleError() {
         if (!empty($this->error)) {
-            switch ($this->error) {
-                case "Missing_Content_Parser":
-                case "Missing Content Parser":
-                    $this->responseCode = 415;
-                    break;
-                case "Not Implemented":
-                    $this->responseCode = 501;
-                    break;
-                case "Forbidden":
-                    $this->responseCode = 403;
-                    break;
-                case "Authorization Required":
-                case "Unauthorized":
-                    $this->responseCode = 401;
-                    break;
-                case "Not Found":
-                    $this->responseCode = 404;
-                    break;
-                case "Not Allowed":
-                case "Method Not Allowed":
-                    $this->responseCode = 405;
-                    // FIXME include Allow header
+            $this->responseCode = $this->error->getCode();
+
+            switch ($this->responseCode) {
+                case 405;
                     header("Allow: " . join(", ", $this->getAllowedMethods()));
                     break;
-                case "Invalid Body Format":
-                case "Not Acceptable":
-                    $this->responseCode = 406;
-                    break;
-                case "Continue Request":
-                    $this->responseCode = 100;
-                    break;
-                case "Created":
-                    $this->responseCode = 201;
-                    break;
-                case "Accepted":
-                    $this->responseCode = 202;
-                    break;
-                case "Reset Content":
-                    $this->responseCode = 205;
-                    break;
-                case "Moved Permanently":
-                    $this->responseCode = 301;
-                    break;
-                case "Redirect":
-                case "Moved Temporarly":
-                    $this->responseCode = 302;
+                case 301:
+                case 302:
+                case 303:
+                case 307:
+                case 308:
                     header("Location: " . $this->model->getLocation());
                     break;
-                case "Not Modified":
-                    $this->responseCode = 304;
-                    break;
-                case "Use Proxy":
-                    $this->responseCode = 305;
-                    break;
-                case "Payment Required":
-                    $this->responseCode = 402;
-                    break;
-                case "Conflict":
-                    $this->responseCode = 409;
-                    break;
-                case "Gone":
-                    $this->responseCode = 410;
-                    break;
-                case "Service Unavailable":
-                    $this->responseCode = 503;
-                    break;
-                case "Too Many Requests":
-                    $this->responseCode = 429;
-                    break;
                 default:
-                    $this->responseCode = 400;
                     break;
             }
+
+            $this->outputHandler->addTraceback($this->error->getMessage());
         }
     }
 

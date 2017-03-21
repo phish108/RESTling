@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception;
 
-class ModelAlreadySet extends \RESTling\Exception {
+class ModelAlreadySet extends BadRequest {
 }
 ?>

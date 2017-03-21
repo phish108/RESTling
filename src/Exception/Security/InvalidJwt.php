@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security;
 
-class InvalidJwt extends \RESTling\Exception {
+class InvalidJwt extends \RESTling\Exception\Forbidden {
 }
 ?>

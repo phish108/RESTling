@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class ComponentNotFound extends \RESTling\Exception {
+class ComponentNotFound extends \RESTling\Exception\NotFound {
 }
 ?>

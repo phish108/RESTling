@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class InvalidParameterObject extends \RESTling\Exception {
+class InvalidParameterObject extends \RESTling\Exception\BadRequest {
 }
 ?>

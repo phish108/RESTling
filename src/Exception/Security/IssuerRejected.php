@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security;
 
-class IssuerRejected extends \RESTling\Exception {
+class IssuerRejected extends \RESTling\Exception\Forbidden {
 }
 ?>

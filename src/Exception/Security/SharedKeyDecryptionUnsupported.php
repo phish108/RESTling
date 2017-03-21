@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security;
 
-class SharedKeyDecryptionUnsupported extends \RESTling\Exception {
+class SharedKeyDecryptionUnsupported extends \RESTling\Exception\Forbidden {
 }
 ?>

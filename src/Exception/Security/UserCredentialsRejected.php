@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security;
 
-class UserCredentialsRejected extends \RESTling\Exception {
+class UserCredentialsRejected extends \RESTling\Exception\AuthorizationRequired {
 }
 ?>

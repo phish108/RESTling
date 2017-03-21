@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security;
 
-class KeyBroken extends \RESTling\Exception {
+class KeyBroken extends \RESTling\Exception\Forbidden {
 }
 ?>

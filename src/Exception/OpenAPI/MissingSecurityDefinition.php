@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class MissingSecurityDefinition extends \RESTling\Exception {
+class MissingSecurityDefinition extends \RESTling\Exception\BadRequest {
 }
 ?>

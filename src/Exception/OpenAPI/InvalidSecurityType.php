@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class InvalidSecurityType extends \RESTling\Exception {
+class InvalidSecurityType extends \RESTling\Exception\BadRequest {
 }
 ?>

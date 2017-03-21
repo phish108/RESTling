@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security\OpenAPI;
 
-class MissingSource extends \RESTling\Exception {
+class MissingSource extends \RESTling\Exception\Forbidden {
 }
 ?>

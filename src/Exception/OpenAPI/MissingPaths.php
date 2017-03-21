@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class MissingPaths extends \RESTling\Exception {
+class MissingPaths extends \RESTling\Exception\BadRequest {
 }
 ?>

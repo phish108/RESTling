@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security;
 
-class JwaUnsupported extends \RESTling\Exception {
+class JwaUnsupported extends \RESTling\Exception\Forbidden {
 }
 ?>

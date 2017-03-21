@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception;
 
-class EmptyInputData extends \RESTling\Exception {
+class EmptyInputData extends BadRequest {
 }
 ?>

@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security\OpenAPI;
 
-class MissingRefreshUrl extends \RESTling\Exception {
+class MissingRefreshUrl extends \RESTling\Exception\Forbidden {
 }
 ?>

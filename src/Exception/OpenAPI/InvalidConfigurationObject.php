@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class InvalidConfigurationObject extends \RESTling\Exception {
+class InvalidConfigurationObject extends \RESTling\Exception\BadRequest {
 }
 ?>

@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class FileReferenceNotFound extends \RESTling\Exception {
+class FileReferenceNotFound extends \RESTling\Exception\BadRequest {
 }
 ?>

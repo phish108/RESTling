@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\OpenAPI;
 
-class MissingConfiguration extends \RESTling\Exception {
+class MissingConfiguration extends \RESTling\Exception\BadRequest {
 }
 ?>

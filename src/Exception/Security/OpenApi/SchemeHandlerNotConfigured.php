@@ -1,6 +1,6 @@
 <?php
 namespace RESTling\Exception\Security\OpenAPI;
 
-class SchemeHandlerNotConfigured extends \RESTling\Exception {
+class SchemeHandlerNotConfigured extends \RESTling\Exception\Forbidden {
 }
 ?>
