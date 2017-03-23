@@ -511,18 +511,19 @@ class Service implements Interfaces\Service
      */
     protected function handleError() {
         if (!empty($this->error)) {
-            $this->responseCode = $this->error->getCode();
+            $this->outputHandler->setStatus($this->error->getCode());
 
             switch ($this->responseCode) {
                 case 405;
-                    header("Allow: " . join(", ", $this->getAllowedMethods()));
+                    $this->outputHandler->setHeader("Allow",
+                        $this->getAllowedMethods());
                     break;
                 case 301:
                 case 302:
                 case 303:
                 case 307:
                 case 308:
-                    header("Location: " . $this->model->getLocation());
+                    $this->outputHandler->setHeader("Location", $this->model->getLocation());
                     break;
                 default:
                     break;

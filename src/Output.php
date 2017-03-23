@@ -12,6 +12,8 @@ class Output implements Interfaces\Output {
 
     private $CORScontext = [];
 
+    private $headers = [];
+
     public function __construct() {
     }
 
@@ -34,6 +36,19 @@ class Output implements Interfaces\Output {
             }
 
             $this->traceback = array_merge($this->traceback, $message);
+        }
+    }
+
+    public function setHeader($type, $value) {
+        if (!empty($type) &&
+            !empty($alue) &&
+            is_string($type)) {
+
+            if (is_array($value)) {
+                $value = join(", ", $value);
+            }
+
+            $this->headers[$type] = $value;
         }
     }
 
@@ -70,6 +85,10 @@ class Output implements Interfaces\Output {
 
         header('X-UA-Compatible: IE=edge'); // force IE to obey!
         header('Cache-Control: no-cache');  // forbid caching
+
+        foreach ($this->headers as $name => $value) {
+            header("$name: $value");
+        }
 
         if (!empty($this->CORScontext)){
             header('Access-Control-Allow-Origin: '  . $this->CORScontext["origin"]);
